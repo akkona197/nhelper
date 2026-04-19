@@ -14,7 +14,181 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          remind_at: string | null
+          task_id: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          remind_at?: string | null
+          task_id?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          remind_at?: string | null
+          task_id?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      task_instances: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          estimate_minutes: number
+          id: string
+          is_done: boolean
+          notes: string | null
+          scheduled_date: string
+          scheduled_time: string | null
+          task_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          estimate_minutes?: number
+          id?: string
+          is_done?: boolean
+          notes?: string | null
+          scheduled_date: string
+          scheduled_time?: string | null
+          task_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          estimate_minutes?: number
+          id?: string
+          is_done?: boolean
+          notes?: string | null
+          scheduled_date?: string
+          scheduled_time?: string | null
+          task_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_instances_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          color: string | null
+          created_at: string
+          deadline: string | null
+          description: string | null
+          estimate_minutes: number
+          id: string
+          priority: Database["public"]["Enums"]["task_priority"]
+          recurrence: Database["public"]["Enums"]["recurrence_type"]
+          recurrence_days: number[]
+          recurrence_end_date: string | null
+          recurrence_start_date: string | null
+          reminder_minutes: number | null
+          start_time: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          estimate_minutes?: number
+          id?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          recurrence?: Database["public"]["Enums"]["recurrence_type"]
+          recurrence_days?: number[]
+          recurrence_end_date?: string | null
+          recurrence_start_date?: string | null
+          reminder_minutes?: number | null
+          start_time?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          estimate_minutes?: number
+          id?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          recurrence?: Database["public"]["Enums"]["recurrence_type"]
+          recurrence_days?: number[]
+          recurrence_end_date?: string | null
+          recurrence_start_date?: string | null
+          reminder_minutes?: number | null
+          start_time?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +197,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      recurrence_type: "none" | "daily" | "weekly"
+      task_priority: "low" | "medium" | "high"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +325,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      recurrence_type: ["none", "daily", "weekly"],
+      task_priority: ["low", "medium", "high"],
+    },
   },
 } as const
