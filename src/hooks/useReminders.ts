@@ -68,7 +68,7 @@ export function useReminders() {
             } catch {}
           }
           await supabase.from("notifications").insert({
-            user_id: user.id,
+            user_id: user!.id,
             title: `Sắp tới: ${c.task.title}`,
             body,
             task_id: c.task.id,
