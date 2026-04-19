@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar, Inbox, Sparkles, BarChart3, LogOut, Bell } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useReminders } from "@/hooks/useReminders";
 
 const NAV = [
   { to: "/", label: "Tuần", icon: Calendar },
@@ -17,6 +18,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, profile, signOut } = useAuth();
   const loc = useLocation();
   const [unread, setUnread] = useState(0);
+  useReminders();
 
   useEffect(() => {
     if (!user) return;
