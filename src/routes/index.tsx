@@ -301,6 +301,18 @@ function WeekView() {
                             )}
                           </div>
                         </div>
+                        <button
+                          onClick={() => {
+                            setNotesCtx({ task, date: d, instance });
+                            setNotesOpen(true);
+                          }}
+                          className={`shrink-0 text-muted-foreground hover:text-primary transition-opacity ${
+                            instance?.notes ? "opacity-100 text-primary" : "opacity-0 group-hover:opacity-100"
+                          }`}
+                          title="Ghi chú"
+                        >
+                          <StickyNote className="size-3.5" />
+                        </button>
                         <DropdownMenu>
                           <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground">
                             ⋯
