@@ -17,7 +17,9 @@ import {
   CalendarDays,
   Pencil,
   Trash2,
+  StickyNote,
 } from "lucide-react";
+import { NotesPanel } from "@/components/NotesPanel";
 import {
   fmtDate,
   getWeekDays,
