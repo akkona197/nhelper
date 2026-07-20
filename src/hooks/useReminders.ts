@@ -12,6 +12,28 @@ import { fmtDate, taskOccursOn, type InstanceRow, type TaskRow } from "@/lib/sch
 export function useReminders() {
   const { user } = useAuth();
   const fired = useRef<Set<string>>(new Set());
+  const seenNotif = useRef<Set<string>>(new Set());
+
+  // Realtime popup for new notifications rows
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`notif-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const n = payload.new as { id: string; title: string; body: string | null };
+          if (seenNotif.current.has(n.id)) return;
+          seenNotif.current.add(n.id);
+          toast(n.title, { description: n.body ?? undefined, duration: 6000 });
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
