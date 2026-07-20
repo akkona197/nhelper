@@ -68,13 +68,68 @@ function ProfilePage() {
           <Input value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div className="space-y-2">
-          <Label>URL ảnh đại diện</Label>
+          <Label>URL ảnh đại diện / Logo</Label>
           <Input value={avatar} onChange={(e) => setAvatar(e.target.value)} placeholder="https://..." />
+          <p className="text-xs text-muted-foreground">Ảnh này cũng dùng làm logo ở thanh bên trái.</p>
         </div>
         <div className="flex justify-end">
           <Button onClick={save} disabled={busy} className="grad-primary text-primary-foreground">
             {busy ? "Đang lưu..." : "Lưu thay đổi"}
           </Button>
+        </div>
+      </div>
+
+      <PreferencesCard />
+    </div>
+  );
+}
+
+function PreferencesCard() {
+  const { theme, fontSize, setTheme, setFontSize } = usePreferences();
+  const themes: { v: Theme; label: string; icon: typeof Sun }[] = [
+    { v: "light", label: "Sáng", icon: Sun },
+    { v: "dark", label: "Tối", icon: Moon },
+  ];
+  const sizes: { v: FontSize; label: string; sample: string }[] = [
+    { v: "sm", label: "Nhỏ", sample: "14px" },
+    { v: "md", label: "Vừa", sample: "16px" },
+    { v: "lg", label: "Lớn", sample: "18px" },
+  ];
+  return (
+    <div className="surface rounded-xl border p-6 space-y-5 mt-6">
+      <h2 className="text-lg font-semibold">Cá nhân hóa</h2>
+      <div className="space-y-2">
+        <Label>Giao diện</Label>
+        <div className="flex gap-2">
+          {themes.map(({ v, label, icon: Icon }) => (
+            <button
+              key={v}
+              onClick={() => setTheme(v)}
+              className={`flex-1 flex items-center justify-center gap-2 rounded-md border px-4 py-3 text-sm transition-colors ${
+                theme === v ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Icon className="size-4" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Cỡ chữ</Label>
+        <div className="flex gap-2">
+          {sizes.map(({ v, label, sample }) => (
+            <button
+              key={v}
+              onClick={() => setFontSize(v)}
+              className={`flex-1 rounded-md border px-4 py-3 transition-colors ${
+                fontSize === v ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <div className="text-sm font-medium">{label}</div>
+              <div className="text-xs opacity-70">{sample}</div>
+            </button>
+          ))}
         </div>
       </div>
     </div>
