@@ -54,7 +54,8 @@ const PRIORITY_BG: Record<string, string> = {
 };
 
 function WeekView() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const greetName = profile?.display_name || user?.email?.split("@")[0] || "bạn";
   const [anchor, setAnchor] = useState(() => new Date());
   const weekStart = useMemo(() => getWeekStart(anchor), [anchor]);
   const days = useMemo(() => getWeekDays(weekStart), [weekStart]);
@@ -207,7 +208,9 @@ function WeekView() {
     <div className="p-6">
       <header className="flex items-center justify-between gap-4 mb-6 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Lịch tuần</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Xin chào, <span className="text-grad">{greetName}</span>
+          </h1>
           <p className="text-sm text-muted-foreground">
             {format(days[0], "dd MMM", { locale: vi })} – {format(days[6], "dd MMM yyyy", { locale: vi })}
           </p>
