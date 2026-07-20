@@ -54,7 +54,8 @@ const PRIORITY_BG: Record<string, string> = {
 };
 
 function WeekView() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const greetName = profile?.display_name || user?.email?.split("@")[0] || "bạn";
   const [anchor, setAnchor] = useState(() => new Date());
   const weekStart = useMemo(() => getWeekStart(anchor), [anchor]);
   const days = useMemo(() => getWeekDays(weekStart), [weekStart]);
