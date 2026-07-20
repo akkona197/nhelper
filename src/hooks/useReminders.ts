@@ -83,7 +83,7 @@ export function useReminders() {
         if (now >= remindAt && now <= c.when) {
           fired.current.add(c.key);
           const body = `Lúc ${c.when.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} • còn ~${Math.max(0, Math.round((c.when.getTime() - now.getTime()) / 60000))}'`;
-          toast(c.task.title, { description: body });
+          // Toast is fired by the realtime subscription on the notifications insert below.
           if (typeof Notification !== "undefined" && Notification.permission === "granted") {
             try {
               new Notification(c.task.title, { body });
