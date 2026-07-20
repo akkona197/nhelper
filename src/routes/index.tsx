@@ -346,6 +346,17 @@ function WeekView() {
         task={editing}
         onSaved={reload}
       />
+      <NotesPanel
+        open={notesOpen}
+        onOpenChange={setNotesOpen}
+        task={notesCtx?.task ?? null}
+        date={notesCtx?.date ?? null}
+        instance={notesCtx?.instance}
+        onSaved={reload}
+      />
+    </div>
+  );
+}
     </div>
   );
 }
