@@ -17,7 +17,9 @@ import {
   CalendarDays,
   Pencil,
   Trash2,
+  StickyNote,
 } from "lucide-react";
+import { NotesPanel } from "@/components/NotesPanel";
 import {
   fmtDate,
   getWeekDays,
@@ -63,6 +65,8 @@ function WeekView() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<TaskRow | null>(null);
   const [defaultDate, setDefaultDate] = useState<Date | undefined>();
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [notesCtx, setNotesCtx] = useState<{ task: TaskRow; date: Date; instance?: InstanceRow } | null>(null);
 
   const reload = useCallback(async () => {
     if (!user) return;
@@ -297,6 +301,18 @@ function WeekView() {
                             )}
                           </div>
                         </div>
+                        <button
+                          onClick={() => {
+                            setNotesCtx({ task, date: d, instance });
+                            setNotesOpen(true);
+                          }}
+                          className={`shrink-0 text-muted-foreground hover:text-primary transition-opacity ${
+                            instance?.notes ? "opacity-100 text-primary" : "opacity-0 group-hover:opacity-100"
+                          }`}
+                          title="Ghi chú"
+                        >
+                          <StickyNote className="size-3.5" />
+                        </button>
                         <DropdownMenu>
                           <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground">
                             ⋯
@@ -328,6 +344,14 @@ function WeekView() {
         onOpenChange={setDialogOpen}
         defaultDate={defaultDate}
         task={editing}
+        onSaved={reload}
+      />
+      <NotesPanel
+        open={notesOpen}
+        onOpenChange={setNotesOpen}
+        task={notesCtx?.task ?? null}
+        date={notesCtx?.date ?? null}
+        instance={notesCtx?.instance}
         onSaved={reload}
       />
     </div>
