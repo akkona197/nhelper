@@ -65,6 +65,8 @@ function WeekView() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<TaskRow | null>(null);
   const [defaultDate, setDefaultDate] = useState<Date | undefined>();
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [notesCtx, setNotesCtx] = useState<{ task: TaskRow; date: Date; instance?: InstanceRow } | null>(null);
 
   const reload = useCallback(async () => {
     if (!user) return;
