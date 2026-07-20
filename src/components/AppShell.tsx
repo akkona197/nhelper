@@ -34,12 +34,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex">
       <aside className="w-60 border-r bg-sidebar flex flex-col">
-        <div className="px-5 py-5 flex items-center gap-2">
-          <div className="size-8 rounded-lg grad-primary flex items-center justify-center">
-            <Sparkles className="size-4 text-primary-foreground" />
-          </div>
-          <div className="font-semibold tracking-tight">Tempo</div>
-        </div>
+        <Link to="/profile" className="px-5 py-5 flex items-center gap-2 hover:opacity-80 transition-opacity" title="Đổi logo trong Hồ sơ">
+          {profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt="Logo" className="size-8 rounded-lg object-cover" />
+          ) : (
+            <div className="size-8 rounded-lg grad-primary flex items-center justify-center">
+              <Sparkles className="size-4 text-primary-foreground" />
+            </div>
+          )}
+          <div className="font-semibold tracking-tight">Master Task</div>
+        </Link>
         <nav className="px-3 flex-1 space-y-1">
           {NAV.map((n) => {
             const active = loc.pathname === n.to;

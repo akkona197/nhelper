@@ -1,6 +1,7 @@
 import { Outlet, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/context/AuthContext";
+import { PreferencesProvider } from "@/context/PreferencesContext";
 
 import appCss from "../styles.css?url";
 
@@ -21,10 +22,10 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Tempo — Lịch tuần & quản lý task" },
+      { title: "Master Task — Lịch tuần & quản lý task" },
       { name: "description", content: "Thời khoá biểu tuần, task lặp lại, deadline, reminder và workload — tất cả ở một nơi." },
-      { property: "og:title", content: "Tempo — Lịch tuần & quản lý task" },
-      { name: "twitter:title", content: "Tempo — Lịch tuần & quản lý task" },
+      { property: "og:title", content: "Master Task — Lịch tuần & quản lý task" },
+      { name: "twitter:title", content: "Master Task — Lịch tuần & quản lý task" },
       { property: "og:description", content: "Thời khoá biểu tuần, task lặp lại, deadline, reminder và workload — tất cả ở một nơi." },
       { name: "twitter:description", content: "Thời khoá biểu tuần, task lặp lại, deadline, reminder và workload — tất cả ở một nơi." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7e4632fa-77b8-4fbb-aea6-16b3efe16aac/id-preview-b20ce10b--f1837782-2934-43e2-92fe-cc60bbc72808.lovable.app-1776618804767.png" },
@@ -58,9 +59,11 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   return (
-    <AuthProvider>
-      <Outlet />
-      <Toaster richColors position="top-right" />
-    </AuthProvider>
+    <PreferencesProvider>
+      <AuthProvider>
+        <Outlet />
+        <Toaster richColors position="top-right" />
+      </AuthProvider>
+    </PreferencesProvider>
   );
 }
