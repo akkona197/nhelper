@@ -365,6 +365,12 @@ function WeekView() {
         instance={notesCtx?.instance}
         onSaved={reload}
       />
+      <TaskDetailDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        task={detailTask}
+        onSaved={reload}
+      />
     </div>
   );
 }
