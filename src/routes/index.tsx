@@ -29,6 +29,7 @@ import {
   type TaskRow,
 } from "@/lib/scheduling";
 import { TaskDialog } from "@/components/TaskDialog";
+import { TaskDetailDialog } from "@/components/TaskDetailDialog";
 import { toast } from "sonner";
 import {
   DropdownMenu,
