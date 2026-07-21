@@ -69,6 +69,8 @@ function WeekView() {
   const [defaultDate, setDefaultDate] = useState<Date | undefined>();
   const [notesOpen, setNotesOpen] = useState(false);
   const [notesCtx, setNotesCtx] = useState<{ task: TaskRow; date: Date; instance?: InstanceRow } | null>(null);
+  const [detailTask, setDetailTask] = useState<TaskRow | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const reload = useCallback(async () => {
     if (!user) return;
