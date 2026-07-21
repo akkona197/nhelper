@@ -291,9 +291,14 @@ function WeekView() {
                           {instance?.is_done && <Check className="size-3 text-background" />}
                         </button>
                         <div className="flex-1 min-w-0">
-                          <div className={`text-xs font-medium leading-snug truncate ${instance?.is_done ? "line-through" : ""}`}>
+                          <button
+                            type="button"
+                            onClick={() => { setDetailTask(task); setDetailOpen(true); }}
+                            className={`block w-full text-left text-xs font-medium leading-snug truncate hover:text-primary ${instance?.is_done ? "line-through" : ""}`}
+                            title="Xem chi tiết"
+                          >
                             {task.title}
-                          </div>
+                          </button>
                           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono mt-0.5">
                             {(instance?.scheduled_time || task.start_time) && (
                               <span className="flex items-center gap-0.5">
