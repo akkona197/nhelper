@@ -29,6 +29,7 @@ import {
   type TaskRow,
 } from "@/lib/scheduling";
 import { TaskDialog } from "@/components/TaskDialog";
+import { TaskDetailDialog } from "@/components/TaskDetailDialog";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -68,6 +69,8 @@ function WeekView() {
   const [defaultDate, setDefaultDate] = useState<Date | undefined>();
   const [notesOpen, setNotesOpen] = useState(false);
   const [notesCtx, setNotesCtx] = useState<{ task: TaskRow; date: Date; instance?: InstanceRow } | null>(null);
+  const [detailTask, setDetailTask] = useState<TaskRow | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const reload = useCallback(async () => {
     if (!user) return;
@@ -288,9 +291,14 @@ function WeekView() {
                           {instance?.is_done && <Check className="size-3 text-background" />}
                         </button>
                         <div className="flex-1 min-w-0">
-                          <div className={`text-xs font-medium leading-snug truncate ${instance?.is_done ? "line-through" : ""}`}>
+                          <button
+                            type="button"
+                            onClick={() => { setDetailTask(task); setDetailOpen(true); }}
+                            className={`block w-full text-left text-xs font-medium leading-snug truncate hover:text-primary ${instance?.is_done ? "line-through" : ""}`}
+                            title="Xem chi tiết"
+                          >
                             {task.title}
-                          </div>
+                          </button>
                           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono mt-0.5">
                             {(instance?.scheduled_time || task.start_time) && (
                               <span className="flex items-center gap-0.5">
@@ -355,6 +363,12 @@ function WeekView() {
         task={notesCtx?.task ?? null}
         date={notesCtx?.date ?? null}
         instance={notesCtx?.instance}
+        onSaved={reload}
+      />
+      <TaskDetailDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        task={detailTask}
         onSaved={reload}
       />
     </div>

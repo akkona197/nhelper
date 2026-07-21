@@ -140,6 +140,7 @@ export type Database = {
           description: string | null
           estimate_minutes: number
           id: string
+          instructions: string | null
           priority: Database["public"]["Enums"]["task_priority"]
           recurrence: Database["public"]["Enums"]["recurrence_type"]
           recurrence_days: number[]
@@ -158,6 +159,7 @@ export type Database = {
           description?: string | null
           estimate_minutes?: number
           id?: string
+          instructions?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           recurrence?: Database["public"]["Enums"]["recurrence_type"]
           recurrence_days?: number[]
@@ -176,6 +178,7 @@ export type Database = {
           description?: string | null
           estimate_minutes?: number
           id?: string
+          instructions?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           recurrence?: Database["public"]["Enums"]["recurrence_type"]
           recurrence_days?: number[]
