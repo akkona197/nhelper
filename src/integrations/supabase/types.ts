@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      labels: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
@@ -82,6 +106,33 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       task_instances: {
         Row: {
           completed_at: string | null
@@ -132,6 +183,39 @@ export type Database = {
           },
         ]
       }
+      task_labels: {
+        Row: {
+          label_id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          label_id: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          label_id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_labels_label_id_fkey"
+            columns: ["label_id"]
+            isOneToOne: false
+            referencedRelation: "labels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_labels_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           color: string | null
@@ -142,6 +226,7 @@ export type Database = {
           id: string
           instructions: string | null
           priority: Database["public"]["Enums"]["task_priority"]
+          project_id: string | null
           recurrence: Database["public"]["Enums"]["recurrence_type"]
           recurrence_days: number[]
           recurrence_end_date: string | null
@@ -161,6 +246,7 @@ export type Database = {
           id?: string
           instructions?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          project_id?: string | null
           recurrence?: Database["public"]["Enums"]["recurrence_type"]
           recurrence_days?: number[]
           recurrence_end_date?: string | null
@@ -180,6 +266,7 @@ export type Database = {
           id?: string
           instructions?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          project_id?: string | null
           recurrence?: Database["public"]["Enums"]["recurrence_type"]
           recurrence_days?: number[]
           recurrence_end_date?: string | null
@@ -190,7 +277,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

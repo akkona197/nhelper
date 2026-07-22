@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,17 +8,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-import { DOW_SHORT, type Recurrence, type Priority, type TaskRow, fmtDate } from "@/lib/scheduling";
+import {
+  DOW_SHORT,
+  type Recurrence,
+  type Priority,
+  type TaskRow,
+  type ProjectRow,
+  type LabelRow,
+  fmtDate,
+} from "@/lib/scheduling";
 
 type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   defaultDate?: Date;
   task?: TaskRow | null;
+  projects: ProjectRow[];
+  labels: LabelRow[];
   onSaved: () => void;
 };
 
-export function TaskDialog({ open, onOpenChange, defaultDate, task, onSaved }: Props) {
+export function TaskDialog({ open, onOpenChange, defaultDate, task, projects, labels, onSaved }: Props) {
   const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -29,6 +39,8 @@ export function TaskDialog({ open, onOpenChange, defaultDate, task, onSaved }: P
   const [startTime, setStartTime] = useState("");
   const [deadline, setDeadline] = useState("");
   const [reminder, setReminder] = useState<number | "">("");
+  const [projectId, setProjectId] = useState<string>("__none");
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -43,16 +55,26 @@ export function TaskDialog({ open, onOpenChange, defaultDate, task, onSaved }: P
       setStartTime(task.start_time?.slice(0, 5) ?? "");
       setDeadline(task.deadline ? task.deadline.slice(0, 16) : "");
       setReminder(task.reminder_minutes ?? "");
+      setProjectId(task.project_id ?? "__none");
+      // load labels for this task
+      supabase.from("task_labels").select("label_id").eq("task_id", task.id).then(({ data }) => {
+        setSelectedLabels((data ?? []).map((r) => r.label_id));
+      });
     } else {
       setTitle(""); setDescription(""); setPriority("medium"); setEstimate(30);
       setRecurrence("none"); setDays([]); setStartTime("");
       setDeadline(defaultDate ? `${fmtDate(defaultDate)}T18:00` : "");
       setReminder("");
+      setProjectId("__none");
+      setSelectedLabels([]);
     }
   }, [open, task, defaultDate]);
 
   function toggleDay(d: number) {
     setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort()));
+  }
+  function toggleLabel(id: string) {
+    setSelectedLabels((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
   async function handleSave() {
@@ -73,6 +95,7 @@ export function TaskDialog({ open, onOpenChange, defaultDate, task, onSaved }: P
       start_time: startTime ? `${startTime}:00` : null,
       deadline: recurrence === "none" && deadline ? new Date(deadline).toISOString() : null,
       reminder_minutes: reminder === "" ? null : Number(reminder),
+      project_id: projectId === "__none" ? null : projectId,
     };
     let taskId = task?.id;
     if (task) {
@@ -82,6 +105,16 @@ export function TaskDialog({ open, onOpenChange, defaultDate, task, onSaved }: P
       const { data, error } = await supabase.from("tasks").insert(payload).select("id").single();
       if (error) { toast.error(error.message); setBusy(false); return; }
       taskId = data.id;
+    }
+
+    // Sync labels
+    if (taskId) {
+      await supabase.from("task_labels").delete().eq("task_id", taskId);
+      if (selectedLabels.length) {
+        await supabase.from("task_labels").insert(
+          selectedLabels.map((label_id) => ({ task_id: taskId!, label_id, user_id: user.id }))
+        );
+      }
     }
 
     // For one-off task: create an instance on its date
@@ -104,7 +137,7 @@ export function TaskDialog({ open, onOpenChange, defaultDate, task, onSaved }: P
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{task ? "Chỉnh sửa task" : "Thêm task mới"}</DialogTitle>
         </DialogHeader>
@@ -119,6 +152,23 @@ export function TaskDialog({ open, onOpenChange, defaultDate, task, onSaved }: P
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
+              <Label>Dự án</Label>
+              <Select value={projectId} onValueChange={setProjectId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">— Không có —</SelectItem>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      <span className="inline-flex items-center gap-2">
+                        <span className="size-2.5 rounded-full" style={{ background: p.color }} />
+                        {p.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label>Độ ưu tiên</Label>
               <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -129,21 +179,50 @@ export function TaskDialog({ open, onOpenChange, defaultDate, task, onSaved }: P
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {labels.length > 0 && (
+            <div className="space-y-2">
+              <Label>Nhãn</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {labels.map((l) => {
+                  const active = selectedLabels.includes(l.id);
+                  return (
+                    <button
+                      key={l.id}
+                      type="button"
+                      onClick={() => toggleLabel(l.id)}
+                      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs border transition-colors"
+                      style={{
+                        borderColor: l.color,
+                        background: active ? l.color : "transparent",
+                        color: active ? "#fff" : l.color,
+                      }}
+                    >
+                      {l.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Ước tính (phút)</Label>
               <Input type="number" min={0} value={estimate} onChange={(e) => setEstimate(Number(e.target.value))} />
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Lặp lại</Label>
-            <Select value={recurrence} onValueChange={(v) => setRecurrence(v as Recurrence)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Không lặp (1 lần)</SelectItem>
-                <SelectItem value="daily">Hằng ngày</SelectItem>
-                <SelectItem value="weekly">Theo thứ trong tuần</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <Label>Lặp lại</Label>
+              <Select value={recurrence} onValueChange={(v) => setRecurrence(v as Recurrence)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Không lặp (1 lần)</SelectItem>
+                  <SelectItem value="daily">Hằng ngày</SelectItem>
+                  <SelectItem value="weekly">Theo thứ trong tuần</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           {recurrence === "weekly" && (
             <div className="flex flex-wrap gap-1">

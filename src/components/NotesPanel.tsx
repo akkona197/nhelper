@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { fmtDate, type InstanceRow, type TaskRow } from "@/lib/scheduling";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import { RichEditor } from "@/components/RichEditor";
 
 type Props = {
   open: boolean;
@@ -75,12 +75,12 @@ export function NotesPanel({ open, onOpenChange, task, date, instance, onSaved }
     }
   }
 
-  function handleChange(v: string) {
-    setValue(v);
-    if (v === initialRef.current) return;
+  function handleChange(html: string) {
+    setValue(html);
+    if (html === initialRef.current) return;
     setStatus("saving");
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => persist(v), 1200);
+    timerRef.current = setTimeout(() => persist(html), 1200);
   }
 
   function handleOpenChange(v: boolean) {
@@ -93,19 +93,19 @@ export function NotesPanel({ open, onOpenChange, task, date, instance, onSaved }
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
+      <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col">
         <SheetHeader>
           <SheetTitle className="truncate">{task?.title ?? "Ghi chú"}</SheetTitle>
           <SheetDescription>
             {date ? format(date, "EEEE, dd MMM yyyy", { locale: vi }) : ""}
           </SheetDescription>
         </SheetHeader>
-        <div className="flex-1 flex flex-col gap-2 mt-2">
-          <Textarea
+        <div className="flex-1 flex flex-col gap-2 mt-2 overflow-hidden">
+          <RichEditor
             value={value}
-            onChange={(e) => handleChange(e.target.value)}
-            placeholder="Ghi chú cho task này... (tự lưu sau 1.2s)"
-            className="flex-1 min-h-[300px] resize-none"
+            onChange={handleChange}
+            placeholder="Ghi chú cho task này... Ctrl+V để dán ảnh, dùng thanh công cụ để định dạng."
+            minHeight={340}
             autoFocus
           />
           <div className="text-[11px] text-muted-foreground font-mono h-4">
