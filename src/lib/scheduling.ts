@@ -18,6 +18,27 @@ export type TaskRow = {
   deadline: string | null;
   reminder_minutes: number | null;
   color: string | null;
+  project_id: string | null;
+  instructions?: string | null;
+};
+
+export type ProjectRow = {
+  id: string;
+  user_id: string;
+  name: string;
+  color: string;
+};
+
+export type LabelRow = {
+  id: string;
+  user_id: string;
+  name: string;
+  color: string;
+};
+
+export type TaskLabelRow = {
+  task_id: string;
+  label_id: string;
 };
 
 export type InstanceRow = {
