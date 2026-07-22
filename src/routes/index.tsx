@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   addDays,
   addMonths,
@@ -26,6 +26,8 @@ import {
   Pencil,
   Trash2,
   StickyNote,
+  FolderKanban,
+  X,
 } from "lucide-react";
 import { NotesPanel } from "@/components/NotesPanel";
 import {
@@ -35,9 +37,12 @@ import {
   taskOccursOn,
   type InstanceRow,
   type TaskRow,
+  type ProjectRow,
+  type LabelRow,
 } from "@/lib/scheduling";
 import { TaskDialog } from "@/components/TaskDialog";
 import { TaskDetailDialog } from "@/components/TaskDetailDialog";
+import { ProjectLabelManager } from "@/components/ProjectLabelManager";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -79,7 +84,6 @@ function WeekView() {
   const days = useMemo(() => {
     if (mode === "day") return [anchor];
     if (mode === "week") return getWeekDays(getWeekStart(anchor));
-    // month: full weeks covering the month (Mon-start)
     const first = startOfMonth(anchor);
     const last = endOfMonth(anchor);
     const gridStart = getWeekStart(first);
@@ -95,6 +99,9 @@ function WeekView() {
 
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [instances, setInstances] = useState<InstanceRow[]>([]);
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [labels, setLabels] = useState<LabelRow[]>([]);
+  const [taskLabels, setTaskLabels] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<TaskRow | null>(null);
@@ -103,22 +110,35 @@ function WeekView() {
   const [notesCtx, setNotesCtx] = useState<{ task: TaskRow; date: Date; instance?: InstanceRow } | null>(null);
   const [detailTask, setDetailTask] = useState<TaskRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [managerOpen, setManagerOpen] = useState(false);
+  const [projectFilter, setProjectFilter] = useState<string | null>(null);
+  const [labelFilter, setLabelFilter] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     const startStr = fmtDate(days[0]);
     const endStr = fmtDate(days[days.length - 1]);
-    const [{ data: t }, { data: ins }] = await Promise.all([
+    const [{ data: t }, { data: ins }, { data: p }, { data: l }, { data: tl }] = await Promise.all([
       supabase.from("tasks").select("*").order("created_at", { ascending: false }),
       supabase
         .from("task_instances")
         .select("*")
         .gte("scheduled_date", startStr)
         .lte("scheduled_date", endStr),
+      supabase.from("projects").select("*").order("created_at"),
+      supabase.from("labels").select("*").order("created_at"),
+      supabase.from("task_labels").select("task_id, label_id"),
     ]);
     setTasks((t as TaskRow[]) ?? []);
     setInstances((ins as InstanceRow[]) ?? []);
+    setProjects((p as ProjectRow[]) ?? []);
+    setLabels((l as LabelRow[]) ?? []);
+    const map: Record<string, string[]> = {};
+    (tl ?? []).forEach((r) => {
+      (map[r.task_id] ||= []).push(r.label_id);
+    });
+    setTaskLabels(map);
     setLoading(false);
   }, [user, days]);
 
@@ -126,10 +146,47 @@ function WeekView() {
     reload();
   }, [reload]);
 
+  // Auto-roll overdue one-off tasks to today (once per session)
+  const rolledRef = useRef(false);
+  useEffect(() => {
+    if (!user || rolledRef.current) return;
+    rolledRef.current = true;
+    (async () => {
+      const today = fmtDate(new Date());
+      const { data: overdue } = await supabase
+        .from("task_instances")
+        .select("id, task_id, scheduled_date, is_done, tasks!inner(recurrence)")
+        .lt("scheduled_date", today)
+        .eq("is_done", false)
+        .eq("tasks.recurrence", "none");
+      if (overdue && overdue.length > 0) {
+        const ids = overdue.map((r: any) => r.id);
+        const { error } = await supabase
+          .from("task_instances")
+          .update({ scheduled_date: today })
+          .in("id", ids);
+        if (!error) {
+          toast.success(`Đã dời ${overdue.length} task quá hạn về hôm nay`);
+          reload();
+        }
+      }
+    })();
+  }, [user, reload]);
+
+  const projectById = useMemo(() => Object.fromEntries(projects.map((p) => [p.id, p])), [projects]);
+  const labelById = useMemo(() => Object.fromEntries(labels.map((l) => [l.id, l])), [labels]);
+
+  function passesFilter(task: TaskRow): boolean {
+    if (projectFilter && task.project_id !== projectFilter) return false;
+    if (labelFilter && !(taskLabels[task.id] ?? []).includes(labelFilter)) return false;
+    return true;
+  }
+
   const itemsByDay = useMemo(() => {
     const map: Record<string, Array<{ task: TaskRow; instance?: InstanceRow }>> = {};
     days.forEach((d) => (map[fmtDate(d)] = []));
     tasks.forEach((task) => {
+      if (!passesFilter(task)) return;
       if (task.recurrence === "none") return;
       days.forEach((d) => {
         if (taskOccursOn(task, d)) {
@@ -142,6 +199,7 @@ function WeekView() {
     instances.forEach((inst) => {
       const task = tasks.find((t) => t.id === inst.task_id);
       if (!task || task.recurrence !== "none") return;
+      if (!passesFilter(task)) return;
       if (map[inst.scheduled_date]) {
         map[inst.scheduled_date].push({ task, instance: inst });
       }
@@ -154,7 +212,7 @@ function WeekView() {
       })
     );
     return map;
-  }, [tasks, instances, days]);
+  }, [tasks, instances, days, projectFilter, labelFilter, taskLabels]);
 
   async function toggleDone(task: TaskRow, date: Date, current?: InstanceRow) {
     if (!user) return;
@@ -263,7 +321,7 @@ function WeekView() {
 
   return (
     <div className="p-6">
-      <header className="flex items-center justify-between gap-4 mb-6 flex-wrap">
+      <header className="flex items-center justify-between gap-4 mb-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
             Xin chào, <span className="text-grad">{greetName}</span>
@@ -288,11 +346,64 @@ function WeekView() {
               <Copy className="size-4 mr-1.5" /> Nhân bản tuần sau
             </Button>
           )}
+          <Button variant="outline" onClick={() => setManagerOpen(true)}>
+            <FolderKanban className="size-4 mr-1.5" /> Dự án & Nhãn
+          </Button>
           <Button onClick={() => openCreate()} className="grad-primary text-primary-foreground">
             <Plus className="size-4 mr-1.5" /> Task mới
           </Button>
         </div>
       </header>
+
+      {(projects.length > 0 || labels.length > 0) && (
+        <div className="flex items-center gap-1.5 flex-wrap mb-4 text-xs">
+          {projects.length > 0 && <span className="text-muted-foreground">Dự án:</span>}
+          {projects.map((p) => {
+            const active = projectFilter === p.id;
+            return (
+              <button
+                key={p.id}
+                onClick={() => setProjectFilter(active ? null : p.id)}
+                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full border transition-colors"
+                style={{
+                  borderColor: p.color,
+                  background: active ? p.color : "transparent",
+                  color: active ? "#fff" : "inherit",
+                }}
+              >
+                <span className="size-1.5 rounded-full" style={{ background: active ? "#fff" : p.color }} />
+                {p.name}
+              </button>
+            );
+          })}
+          {labels.length > 0 && <span className="text-muted-foreground ml-2">Nhãn:</span>}
+          {labels.map((l) => {
+            const active = labelFilter === l.id;
+            return (
+              <button
+                key={l.id}
+                onClick={() => setLabelFilter(active ? null : l.id)}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-full border transition-colors"
+                style={{
+                  borderColor: l.color,
+                  background: active ? l.color : "transparent",
+                  color: active ? "#fff" : l.color,
+                }}
+              >
+                {l.name}
+              </button>
+            );
+          })}
+          {(projectFilter || labelFilter) && (
+            <button
+              onClick={() => { setProjectFilter(null); setLabelFilter(null); }}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-border text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-3" /> Bỏ lọc
+            </button>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <div className="text-muted-foreground">Đang tải...</div>
@@ -349,74 +460,100 @@ function WeekView() {
                   {(totalMin / 60).toFixed(1)}h • {items.length} task
                 </div>
                 <div className="space-y-1.5 flex-1">
-                  {items.map(({ task, instance }) => (
-                    <div
-                      key={`${task.id}-${dStr}`}
-                      className={`group rounded-md border border-border/60 bg-card/60 px-2 py-1.5 border-l-2 ${PRIORITY_BG[task.priority]} ${
-                        instance?.is_done ? "opacity-50" : ""
-                      }`}
-                    >
-                      <div className="flex items-start gap-1.5">
-                        <button
-                          onClick={() => toggleDone(task, d, instance)}
-                          className={`mt-0.5 size-4 shrink-0 rounded border flex items-center justify-center ${
-                            instance?.is_done
-                              ? "bg-success border-success"
-                              : "border-border hover:border-primary"
-                          }`}
-                        >
-                          {instance?.is_done && <Check className="size-3 text-background" />}
-                        </button>
-                        <div className="flex-1 min-w-0">
+                  {items.map(({ task, instance }) => {
+                    const project = task.project_id ? projectById[task.project_id] : null;
+                    const taskLabelIds = taskLabels[task.id] ?? [];
+                    return (
+                      <div
+                        key={`${task.id}-${dStr}`}
+                        className={`group rounded-md border border-border/60 bg-card/60 px-2 py-1.5 border-l-2 ${PRIORITY_BG[task.priority]} ${
+                          instance?.is_done ? "opacity-50" : ""
+                        }`}
+                        style={project ? { borderLeftColor: project.color } : undefined}
+                      >
+                        <div className="flex items-start gap-1.5">
                           <button
-                            type="button"
-                            onClick={() => { setDetailTask(task); setDetailOpen(true); }}
-                            className={`block w-full text-left text-xs font-medium leading-snug truncate hover:text-primary ${instance?.is_done ? "line-through" : ""}`}
-                            title="Xem chi tiết"
+                            onClick={() => toggleDone(task, d, instance)}
+                            className={`mt-0.5 size-4 shrink-0 rounded border flex items-center justify-center ${
+                              instance?.is_done
+                                ? "bg-success border-success"
+                                : "border-border hover:border-primary"
+                            }`}
                           >
-                            {task.title}
+                            {instance?.is_done && <Check className="size-3 text-background" />}
                           </button>
-                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono mt-0.5">
-                            {(instance?.scheduled_time || task.start_time) && (
-                              <span className="flex items-center gap-0.5">
-                                <Clock className="size-2.5" />
-                                {(instance?.scheduled_time || task.start_time)?.slice(0, 5)}
-                              </span>
-                            )}
-                            <span>{instance?.estimate_minutes ?? task.estimate_minutes}m</span>
-                            {task.recurrence !== "none" && (
-                              <span className="px-1 rounded bg-primary/15 text-primary">↻</span>
-                            )}
+                          <div className="flex-1 min-w-0">
+                            <button
+                              type="button"
+                              onClick={() => { setDetailTask(task); setDetailOpen(true); }}
+                              className={`block w-full text-left text-xs font-medium leading-snug truncate hover:text-primary ${instance?.is_done ? "line-through" : ""}`}
+                              title="Xem chi tiết"
+                            >
+                              {task.title}
+                            </button>
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono mt-0.5 flex-wrap">
+                              {(instance?.scheduled_time || task.start_time) && (
+                                <span className="flex items-center gap-0.5">
+                                  <Clock className="size-2.5" />
+                                  {(instance?.scheduled_time || task.start_time)?.slice(0, 5)}
+                                </span>
+                              )}
+                              <span>{instance?.estimate_minutes ?? task.estimate_minutes}m</span>
+                              {task.recurrence !== "none" && (
+                                <span className="px-1 rounded bg-primary/15 text-primary">↻</span>
+                              )}
+                              {project && (
+                                <span
+                                  className="px-1.5 py-px rounded"
+                                  style={{ background: project.color + "22", color: project.color }}
+                                >
+                                  {project.name}
+                                </span>
+                              )}
+                              {taskLabelIds.map((id) => {
+                                const l = labelById[id];
+                                if (!l) return null;
+                                return (
+                                  <span
+                                    key={id}
+                                    className="px-1.5 py-px rounded-full border"
+                                    style={{ borderColor: l.color, color: l.color }}
+                                  >
+                                    {l.name}
+                                  </span>
+                                );
+                              })}
+                            </div>
                           </div>
+                          <button
+                            onClick={() => {
+                              setNotesCtx({ task, date: d, instance });
+                              setNotesOpen(true);
+                            }}
+                            className={`shrink-0 text-muted-foreground hover:text-primary transition-opacity ${
+                              instance?.notes ? "opacity-100 text-primary" : "opacity-0 group-hover:opacity-100"
+                            }`}
+                            title="Ghi chú"
+                          >
+                            <StickyNote className="size-3.5" />
+                          </button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground">
+                              ⋯
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEdit(task)}>
+                                <Pencil className="size-3.5 mr-2" /> Sửa
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => deleteTask(task)} className="text-destructive">
+                                <Trash2 className="size-3.5 mr-2" /> Xoá
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
-                        <button
-                          onClick={() => {
-                            setNotesCtx({ task, date: d, instance });
-                            setNotesOpen(true);
-                          }}
-                          className={`shrink-0 text-muted-foreground hover:text-primary transition-opacity ${
-                            instance?.notes ? "opacity-100 text-primary" : "opacity-0 group-hover:opacity-100"
-                          }`}
-                          title="Ghi chú"
-                        >
-                          <StickyNote className="size-3.5" />
-                        </button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground">
-                            ⋯
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openEdit(task)}>
-                              <Pencil className="size-3.5 mr-2" /> Sửa
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => deleteTask(task)} className="text-destructive">
-                              <Trash2 className="size-3.5 mr-2" /> Xoá
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {items.length === 0 && (
                     <div className="text-[11px] text-muted-foreground/60 italic mt-2">Trống</div>
                   )}
@@ -432,6 +569,8 @@ function WeekView() {
         onOpenChange={setDialogOpen}
         defaultDate={defaultDate}
         task={editing}
+        projects={projects}
+        labels={labels}
         onSaved={reload}
       />
       <NotesPanel
@@ -447,6 +586,11 @@ function WeekView() {
         onOpenChange={setDetailOpen}
         task={detailTask}
         onSaved={reload}
+      />
+      <ProjectLabelManager
+        open={managerOpen}
+        onOpenChange={setManagerOpen}
+        onChanged={reload}
       />
     </div>
   );
