@@ -504,8 +504,14 @@ function WeekView() {
             return (
               <button
                 key={p.id}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = "copy";
+                  e.dataTransfer.setData("application/x-assign-project", p.id);
+                }}
                 onClick={() => setProjectFilter(active ? null : p.id)}
-                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full border transition-colors"
+                title="Kéo thả vào task để gán dự án"
+                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full border transition-colors cursor-grab active:cursor-grabbing"
                 style={{
                   borderColor: p.color,
                   background: active ? p.color : "transparent",
@@ -523,8 +529,14 @@ function WeekView() {
             return (
               <button
                 key={l.id}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = "copy";
+                  e.dataTransfer.setData("application/x-assign-label", l.id);
+                }}
                 onClick={() => setLabelFilter(active ? null : l.id)}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-full border transition-colors"
+                title="Kéo thả vào task để gán nhãn"
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-full border transition-colors cursor-grab active:cursor-grabbing"
                 style={{
                   borderColor: l.color,
                   background: active ? l.color : "transparent",
