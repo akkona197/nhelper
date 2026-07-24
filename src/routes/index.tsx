@@ -680,6 +680,8 @@ function MonthGrid({
   itemsByDay,
   onDayClick,
   onAdd,
+  dragHandlers,
+  dragOverDay,
 }: {
   days: Date[];
   anchor: Date;
@@ -687,6 +689,12 @@ function MonthGrid({
   itemsByDay: Record<string, Array<{ task: TaskRow; instance?: InstanceRow }>>;
   onDayClick: (d: Date) => void;
   onAdd: (d: Date) => void;
+  dragHandlers: (dayStr: string) => {
+    onDragOver: (e: React.DragEvent) => void;
+    onDragLeave: () => void;
+    onDrop: (e: React.DragEvent) => void;
+  };
+  dragOverDay: string | null;
 }) {
   const dowHeaders = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
   return (
@@ -708,9 +716,12 @@ function MonthGrid({
           return (
             <div
               key={dStr}
+              {...dragHandlers(dStr)}
               className={`group min-h-[110px] border-r border-b border-border p-1.5 flex flex-col cursor-pointer transition-colors ${
                 inMonth ? "bg-card/30 hover:bg-card/60" : "bg-background/40 text-muted-foreground/60"
-              } ${isToday ? "ring-1 ring-primary/60 ring-inset" : ""}`}
+              } ${isToday ? "ring-1 ring-primary/60 ring-inset" : ""} ${
+                dragOverDay === dStr ? "ring-2 ring-primary bg-primary/10" : ""
+              }`}
               onClick={() => onDayClick(d)}
             >
               <div className="flex items-center justify-between mb-1">
