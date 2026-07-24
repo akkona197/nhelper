@@ -114,6 +114,89 @@ function WeekView() {
   const [projectFilter, setProjectFilter] = useState<string | null>(null);
   const [labelFilter, setLabelFilter] = useState<string | null>(null);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
+  const [dragOverTask, setDragOverTask] = useState<string | null>(null);
+
+  // Resizable week columns (persisted in localStorage)
+  const [colWidths, setColWidths] = useState<number[]>(() => {
+    try {
+      const raw = localStorage.getItem("mt.colWidths");
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr) && arr.length === 7) return arr;
+      }
+    } catch {}
+    return Array(7).fill(220);
+  });
+  useEffect(() => {
+    try { localStorage.setItem("mt.colWidths", JSON.stringify(colWidths)); } catch {}
+  }, [colWidths]);
+  function startResize(idx: number, e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startW = colWidths[idx];
+    const onMove = (ev: MouseEvent) => {
+      const next = Math.max(140, Math.min(600, startW + (ev.clientX - startX)));
+      setColWidths((prev) => {
+        const c = [...prev];
+        c[idx] = next;
+        return c;
+      });
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }
+
+  async function assignProjectToTask(taskId: string, projectId: string) {
+    const { error } = await supabase.from("tasks").update({ project_id: projectId }).eq("id", taskId);
+    if (error) return toast.error(error.message);
+    toast.success("Đã gán dự án");
+    reload();
+  }
+  async function assignLabelToTask(taskId: string, labelId: string) {
+    if (!user) return;
+    if ((taskLabels[taskId] ?? []).includes(labelId)) {
+      toast("Nhãn đã có trên task này");
+      return;
+    }
+    const { error } = await supabase
+      .from("task_labels")
+      .insert({ task_id: taskId, label_id: labelId, user_id: user.id });
+    if (error) return toast.error(error.message);
+    toast.success("Đã gán nhãn");
+    reload();
+  }
+
+  const taskDropHandlers = (taskId: string) => ({
+    onDragOver: (e: React.DragEvent) => {
+      if (
+        e.dataTransfer.types.includes("application/x-assign-project") ||
+        e.dataTransfer.types.includes("application/x-assign-label")
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = "copy";
+        if (dragOverTask !== taskId) setDragOverTask(taskId);
+      }
+    },
+    onDragLeave: () => {
+      if (dragOverTask === taskId) setDragOverTask(null);
+    },
+    onDrop: (e: React.DragEvent) => {
+      const pid = e.dataTransfer.getData("application/x-assign-project");
+      const lid = e.dataTransfer.getData("application/x-assign-label");
+      if (!pid && !lid) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setDragOverTask(null);
+      if (pid) assignProjectToTask(taskId, pid);
+      if (lid) assignLabelToTask(taskId, lid);
+    },
+  });
 
   const dragHandlers = (dayStr: string) => ({
     onDragOver: (e: React.DragEvent) => {
