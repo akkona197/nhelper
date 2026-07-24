@@ -579,10 +579,10 @@ function WeekView() {
           className={
             mode === "day"
               ? "grid grid-cols-1 gap-3 max-w-2xl mx-auto"
-              : "grid grid-cols-1 md:grid-cols-7 gap-3"
+              : "flex gap-3 overflow-x-auto pb-2"
           }
         >
-          {days.map((d) => {
+          {days.map((d, idx) => {
             const dStr = fmtDate(d);
             const isToday = isSameDay(d, today);
             const items = itemsByDay[dStr] ?? [];
@@ -591,12 +591,20 @@ function WeekView() {
               <div
                 key={dStr}
                 {...dragHandlers(dStr)}
-                className={`surface rounded-xl border p-3 flex flex-col transition-colors ${
+                style={mode === "week" ? { width: colWidths[idx], flex: "0 0 auto" } : undefined}
+                className={`relative surface rounded-xl border p-3 flex flex-col transition-colors ${
                   mode === "day" ? "min-h-[420px]" : "min-h-[280px]"
                 } ${isToday ? "ring-1 ring-primary/60 glow" : ""} ${
                   dragOverDay === dStr ? "ring-2 ring-primary bg-primary/5" : ""
                 }`}
               >
+                {mode === "week" && (
+                  <div
+                    onMouseDown={(e) => startResize(idx, e)}
+                    className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-primary/40 active:bg-primary/60 transition-colors z-10"
+                    title="Kéo để chỉnh độ rộng cột"
+                  />
+                )}
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
