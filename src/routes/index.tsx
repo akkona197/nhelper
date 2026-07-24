@@ -493,9 +493,12 @@ function WeekView() {
             return (
               <div
                 key={dStr}
-                className={`surface rounded-xl border p-3 flex flex-col ${
+                {...dragHandlers(dStr)}
+                className={`surface rounded-xl border p-3 flex flex-col transition-colors ${
                   mode === "day" ? "min-h-[420px]" : "min-h-[280px]"
-                } ${isToday ? "ring-1 ring-primary/60 glow" : ""}`}
+                } ${isToday ? "ring-1 ring-primary/60 glow" : ""} ${
+                  dragOverDay === dStr ? "ring-2 ring-primary bg-primary/5" : ""
+                }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div>
