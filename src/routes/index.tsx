@@ -646,9 +646,12 @@ function WeekView() {
                             })
                           );
                         }}
+                        {...taskDropHandlers(task.id)}
                         className={`group rounded-md border border-border/60 bg-card/60 px-2 py-1.5 border-l-2 ${PRIORITY_BG[task.priority]} ${
                           instance?.is_done ? "opacity-50" : ""
-                        } ${task.recurrence === "none" ? "cursor-grab active:cursor-grabbing" : ""}`}
+                        } ${task.recurrence === "none" ? "cursor-grab active:cursor-grabbing" : ""} ${
+                          dragOverTask === task.id ? "ring-2 ring-primary bg-primary/10" : ""
+                        }`}
                         style={project ? { borderLeftColor: project.color } : undefined}
                       >
                         <div className="flex items-start gap-1.5">
