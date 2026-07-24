@@ -113,6 +113,31 @@ function WeekView() {
   const [managerOpen, setManagerOpen] = useState(false);
   const [projectFilter, setProjectFilter] = useState<string | null>(null);
   const [labelFilter, setLabelFilter] = useState<string | null>(null);
+  const [dragOverDay, setDragOverDay] = useState<string | null>(null);
+
+  const dragHandlers = (dayStr: string) => ({
+    onDragOver: (e: React.DragEvent) => {
+      if (e.dataTransfer.types.includes("application/x-task")) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        if (dragOverDay !== dayStr) setDragOverDay(dayStr);
+      }
+    },
+    onDragLeave: () => {
+      if (dragOverDay === dayStr) setDragOverDay(null);
+    },
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOverDay(null);
+      const raw = e.dataTransfer.getData("application/x-task");
+      if (!raw) return;
+      try {
+        const payload = JSON.parse(raw);
+        const [y, m, d] = dayStr.split("-").map(Number);
+        moveTaskToDate(payload, new Date(y, m - 1, d));
+      } catch {}
+    },
+  });
 
   const reload = useCallback(async () => {
     if (!user) return;
@@ -236,6 +261,39 @@ function WeekView() {
         completed_at: new Date().toISOString(),
       });
     }
+    reload();
+  }
+
+  async function moveTaskToDate(
+    payload: { taskId: string; instanceId?: string; recurrence: string; fromDate: string },
+    toDate: Date
+  ) {
+    if (!user) return;
+    const toStr = fmtDate(toDate);
+    if (payload.fromDate === toStr) return;
+    if (payload.recurrence !== "none") {
+      toast.error("Task lặp lại không thể kéo — hãy sửa lịch lặp trong dialog.");
+      return;
+    }
+    if (payload.instanceId) {
+      const { error } = await supabase
+        .from("task_instances")
+        .update({ scheduled_date: toStr })
+        .eq("id", payload.instanceId);
+      if (error) return toast.error(error.message);
+    } else {
+      const task = tasks.find((t) => t.id === payload.taskId);
+      if (!task) return;
+      const { error } = await supabase.from("task_instances").insert({
+        user_id: user.id,
+        task_id: task.id,
+        scheduled_date: toStr,
+        scheduled_time: task.start_time,
+        estimate_minutes: task.estimate_minutes,
+      });
+      if (error) return toast.error(error.message);
+    }
+    toast.success("Đã chuyển sang " + format(toDate, "dd/MM"));
     reload();
   }
 
@@ -418,6 +476,8 @@ function WeekView() {
             setMode("day");
           }}
           onAdd={openCreate}
+          dragHandlers={dragHandlers}
+          dragOverDay={dragOverDay}
         />
       ) : (
         <div
@@ -435,9 +495,12 @@ function WeekView() {
             return (
               <div
                 key={dStr}
-                className={`surface rounded-xl border p-3 flex flex-col ${
+                {...dragHandlers(dStr)}
+                className={`surface rounded-xl border p-3 flex flex-col transition-colors ${
                   mode === "day" ? "min-h-[420px]" : "min-h-[280px]"
-                } ${isToday ? "ring-1 ring-primary/60 glow" : ""}`}
+                } ${isToday ? "ring-1 ring-primary/60 glow" : ""} ${
+                  dragOverDay === dStr ? "ring-2 ring-primary bg-primary/5" : ""
+                }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div>
@@ -466,9 +529,23 @@ function WeekView() {
                     return (
                       <div
                         key={`${task.id}-${dStr}`}
+                        draggable={task.recurrence === "none"}
+                        onDragStart={(e) => {
+                          if (task.recurrence !== "none") return;
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData(
+                            "application/x-task",
+                            JSON.stringify({
+                              taskId: task.id,
+                              instanceId: instance?.id,
+                              recurrence: task.recurrence,
+                              fromDate: dStr,
+                            })
+                          );
+                        }}
                         className={`group rounded-md border border-border/60 bg-card/60 px-2 py-1.5 border-l-2 ${PRIORITY_BG[task.priority]} ${
                           instance?.is_done ? "opacity-50" : ""
-                        }`}
+                        } ${task.recurrence === "none" ? "cursor-grab active:cursor-grabbing" : ""}`}
                         style={project ? { borderLeftColor: project.color } : undefined}
                       >
                         <div className="flex items-start gap-1.5">
@@ -603,6 +680,8 @@ function MonthGrid({
   itemsByDay,
   onDayClick,
   onAdd,
+  dragHandlers,
+  dragOverDay,
 }: {
   days: Date[];
   anchor: Date;
@@ -610,6 +689,12 @@ function MonthGrid({
   itemsByDay: Record<string, Array<{ task: TaskRow; instance?: InstanceRow }>>;
   onDayClick: (d: Date) => void;
   onAdd: (d: Date) => void;
+  dragHandlers: (dayStr: string) => {
+    onDragOver: (e: React.DragEvent) => void;
+    onDragLeave: () => void;
+    onDrop: (e: React.DragEvent) => void;
+  };
+  dragOverDay: string | null;
 }) {
   const dowHeaders = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
   return (
@@ -631,9 +716,12 @@ function MonthGrid({
           return (
             <div
               key={dStr}
+              {...dragHandlers(dStr)}
               className={`group min-h-[110px] border-r border-b border-border p-1.5 flex flex-col cursor-pointer transition-colors ${
                 inMonth ? "bg-card/30 hover:bg-card/60" : "bg-background/40 text-muted-foreground/60"
-              } ${isToday ? "ring-1 ring-primary/60 ring-inset" : ""}`}
+              } ${isToday ? "ring-1 ring-primary/60 ring-inset" : ""} ${
+                dragOverDay === dStr ? "ring-2 ring-primary bg-primary/10" : ""
+              }`}
               onClick={() => onDayClick(d)}
             >
               <div className="flex items-center justify-between mb-1">
