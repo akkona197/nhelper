@@ -476,6 +476,8 @@ function WeekView() {
             setMode("day");
           }}
           onAdd={openCreate}
+          dragHandlers={dragHandlers}
+          dragOverDay={dragOverDay}
         />
       ) : (
         <div
