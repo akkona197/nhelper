@@ -239,6 +239,39 @@ function WeekView() {
     reload();
   }
 
+  async function moveTaskToDate(
+    payload: { taskId: string; instanceId?: string; recurrence: string; fromDate: string },
+    toDate: Date
+  ) {
+    if (!user) return;
+    const toStr = fmtDate(toDate);
+    if (payload.fromDate === toStr) return;
+    if (payload.recurrence !== "none") {
+      toast.error("Task lặp lại không thể kéo — hãy sửa lịch lặp trong dialog.");
+      return;
+    }
+    if (payload.instanceId) {
+      const { error } = await supabase
+        .from("task_instances")
+        .update({ scheduled_date: toStr })
+        .eq("id", payload.instanceId);
+      if (error) return toast.error(error.message);
+    } else {
+      const task = tasks.find((t) => t.id === payload.taskId);
+      if (!task) return;
+      const { error } = await supabase.from("task_instances").insert({
+        user_id: user.id,
+        task_id: task.id,
+        scheduled_date: toStr,
+        scheduled_time: task.start_time,
+        estimate_minutes: task.estimate_minutes,
+      });
+      if (error) return toast.error(error.message);
+    }
+    toast.success("Đã chuyển sang " + format(toDate, "dd/MM"));
+    reload();
+  }
+
   async function deleteTask(task: TaskRow) {
     if (!confirm(`Xoá task "${task.title}"?`)) return;
     await supabase.from("tasks").delete().eq("id", task.id);
