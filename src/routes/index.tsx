@@ -527,9 +527,23 @@ function WeekView() {
                     return (
                       <div
                         key={`${task.id}-${dStr}`}
+                        draggable={task.recurrence === "none"}
+                        onDragStart={(e) => {
+                          if (task.recurrence !== "none") return;
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData(
+                            "application/x-task",
+                            JSON.stringify({
+                              taskId: task.id,
+                              instanceId: instance?.id,
+                              recurrence: task.recurrence,
+                              fromDate: dStr,
+                            })
+                          );
+                        }}
                         className={`group rounded-md border border-border/60 bg-card/60 px-2 py-1.5 border-l-2 ${PRIORITY_BG[task.priority]} ${
                           instance?.is_done ? "opacity-50" : ""
-                        }`}
+                        } ${task.recurrence === "none" ? "cursor-grab active:cursor-grabbing" : ""}`}
                         style={project ? { borderLeftColor: project.color } : undefined}
                       >
                         <div className="flex items-start gap-1.5">
