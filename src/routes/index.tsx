@@ -114,6 +114,89 @@ function WeekView() {
   const [projectFilter, setProjectFilter] = useState<string | null>(null);
   const [labelFilter, setLabelFilter] = useState<string | null>(null);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
+  const [dragOverTask, setDragOverTask] = useState<string | null>(null);
+
+  // Resizable week columns (persisted in localStorage)
+  const [colWidths, setColWidths] = useState<number[]>(() => {
+    try {
+      const raw = localStorage.getItem("mt.colWidths");
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr) && arr.length === 7) return arr;
+      }
+    } catch {}
+    return Array(7).fill(220);
+  });
+  useEffect(() => {
+    try { localStorage.setItem("mt.colWidths", JSON.stringify(colWidths)); } catch {}
+  }, [colWidths]);
+  function startResize(idx: number, e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startW = colWidths[idx];
+    const onMove = (ev: MouseEvent) => {
+      const next = Math.max(140, Math.min(600, startW + (ev.clientX - startX)));
+      setColWidths((prev) => {
+        const c = [...prev];
+        c[idx] = next;
+        return c;
+      });
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }
+
+  async function assignProjectToTask(taskId: string, projectId: string) {
+    const { error } = await supabase.from("tasks").update({ project_id: projectId }).eq("id", taskId);
+    if (error) return toast.error(error.message);
+    toast.success("Đã gán dự án");
+    reload();
+  }
+  async function assignLabelToTask(taskId: string, labelId: string) {
+    if (!user) return;
+    if ((taskLabels[taskId] ?? []).includes(labelId)) {
+      toast("Nhãn đã có trên task này");
+      return;
+    }
+    const { error } = await supabase
+      .from("task_labels")
+      .insert({ task_id: taskId, label_id: labelId, user_id: user.id });
+    if (error) return toast.error(error.message);
+    toast.success("Đã gán nhãn");
+    reload();
+  }
+
+  const taskDropHandlers = (taskId: string) => ({
+    onDragOver: (e: React.DragEvent) => {
+      if (
+        e.dataTransfer.types.includes("application/x-assign-project") ||
+        e.dataTransfer.types.includes("application/x-assign-label")
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = "copy";
+        if (dragOverTask !== taskId) setDragOverTask(taskId);
+      }
+    },
+    onDragLeave: () => {
+      if (dragOverTask === taskId) setDragOverTask(null);
+    },
+    onDrop: (e: React.DragEvent) => {
+      const pid = e.dataTransfer.getData("application/x-assign-project");
+      const lid = e.dataTransfer.getData("application/x-assign-label");
+      if (!pid && !lid) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setDragOverTask(null);
+      if (pid) assignProjectToTask(taskId, pid);
+      if (lid) assignLabelToTask(taskId, lid);
+    },
+  });
 
   const dragHandlers = (dayStr: string) => ({
     onDragOver: (e: React.DragEvent) => {
@@ -421,8 +504,14 @@ function WeekView() {
             return (
               <button
                 key={p.id}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = "copy";
+                  e.dataTransfer.setData("application/x-assign-project", p.id);
+                }}
                 onClick={() => setProjectFilter(active ? null : p.id)}
-                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full border transition-colors"
+                title="Kéo thả vào task để gán dự án"
+                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full border transition-colors cursor-grab active:cursor-grabbing"
                 style={{
                   borderColor: p.color,
                   background: active ? p.color : "transparent",
@@ -440,8 +529,14 @@ function WeekView() {
             return (
               <button
                 key={l.id}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = "copy";
+                  e.dataTransfer.setData("application/x-assign-label", l.id);
+                }}
                 onClick={() => setLabelFilter(active ? null : l.id)}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-full border transition-colors"
+                title="Kéo thả vào task để gán nhãn"
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-full border transition-colors cursor-grab active:cursor-grabbing"
                 style={{
                   borderColor: l.color,
                   background: active ? l.color : "transparent",
@@ -484,10 +579,10 @@ function WeekView() {
           className={
             mode === "day"
               ? "grid grid-cols-1 gap-3 max-w-2xl mx-auto"
-              : "grid grid-cols-1 md:grid-cols-7 gap-3"
+              : "flex gap-3 overflow-x-auto pb-2"
           }
         >
-          {days.map((d) => {
+          {days.map((d, idx) => {
             const dStr = fmtDate(d);
             const isToday = isSameDay(d, today);
             const items = itemsByDay[dStr] ?? [];
@@ -496,12 +591,20 @@ function WeekView() {
               <div
                 key={dStr}
                 {...dragHandlers(dStr)}
-                className={`surface rounded-xl border p-3 flex flex-col transition-colors ${
+                style={mode === "week" ? { width: colWidths[idx], flex: "0 0 auto" } : undefined}
+                className={`relative surface rounded-xl border p-3 flex flex-col transition-colors ${
                   mode === "day" ? "min-h-[420px]" : "min-h-[280px]"
                 } ${isToday ? "ring-1 ring-primary/60 glow" : ""} ${
                   dragOverDay === dStr ? "ring-2 ring-primary bg-primary/5" : ""
                 }`}
               >
+                {mode === "week" && (
+                  <div
+                    onMouseDown={(e) => startResize(idx, e)}
+                    className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-primary/40 active:bg-primary/60 transition-colors z-10"
+                    title="Kéo để chỉnh độ rộng cột"
+                  />
+                )}
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -543,9 +646,12 @@ function WeekView() {
                             })
                           );
                         }}
+                        {...taskDropHandlers(task.id)}
                         className={`group rounded-md border border-border/60 bg-card/60 px-2 py-1.5 border-l-2 ${PRIORITY_BG[task.priority]} ${
                           instance?.is_done ? "opacity-50" : ""
-                        } ${task.recurrence === "none" ? "cursor-grab active:cursor-grabbing" : ""}`}
+                        } ${task.recurrence === "none" ? "cursor-grab active:cursor-grabbing" : ""} ${
+                          dragOverTask === task.id ? "ring-2 ring-primary bg-primary/10" : ""
+                        }`}
                         style={project ? { borderLeftColor: project.color } : undefined}
                       >
                         <div className="flex items-start gap-1.5">
