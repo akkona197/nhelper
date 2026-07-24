@@ -113,6 +113,31 @@ function WeekView() {
   const [managerOpen, setManagerOpen] = useState(false);
   const [projectFilter, setProjectFilter] = useState<string | null>(null);
   const [labelFilter, setLabelFilter] = useState<string | null>(null);
+  const [dragOverDay, setDragOverDay] = useState<string | null>(null);
+
+  const dragHandlers = (dayStr: string) => ({
+    onDragOver: (e: React.DragEvent) => {
+      if (e.dataTransfer.types.includes("application/x-task")) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        if (dragOverDay !== dayStr) setDragOverDay(dayStr);
+      }
+    },
+    onDragLeave: () => {
+      if (dragOverDay === dayStr) setDragOverDay(null);
+    },
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOverDay(null);
+      const raw = e.dataTransfer.getData("application/x-task");
+      if (!raw) return;
+      try {
+        const payload = JSON.parse(raw);
+        const [y, m, d] = dayStr.split("-").map(Number);
+        moveTaskToDate(payload, new Date(y, m - 1, d));
+      } catch {}
+    },
+  });
 
   const reload = useCallback(async () => {
     if (!user) return;
