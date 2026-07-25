@@ -3,14 +3,14 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { usePreferences, type Theme, type FontSize } from "@/context/PreferencesContext";
+import { usePreferences, type Theme, type FontSize, type BackgroundId, BG_PRESETS } from "@/context/PreferencesContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Sun, Moon, Upload, Loader2 } from "lucide-react";
+import { Sun, Moon, Upload, Loader2, Image as ImageIcon } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
   component: () => (
