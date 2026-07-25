@@ -3,14 +3,14 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { usePreferences, type Theme, type FontSize } from "@/context/PreferencesContext";
+import { usePreferences, type Theme, type FontSize, type BackgroundId, BG_PRESETS } from "@/context/PreferencesContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Sun, Moon, Upload, Loader2 } from "lucide-react";
+import { Sun, Moon, Upload, Loader2, Image as ImageIcon } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
   component: () => (
@@ -159,7 +159,11 @@ function ProfilePage() {
 
 
 function PreferencesCard() {
-  const { theme, fontSize, setTheme, setFontSize } = usePreferences();
+  const { user } = useAuth();
+  const { theme, fontSize, background, backgroundUrl, setTheme, setFontSize, setBackground, setBackgroundUrl } = usePreferences();
+  const bgFileRef = useRef<HTMLInputElement>(null);
+  const [bgUploading, setBgUploading] = useState(false);
+
   const themes: { v: Theme; label: string; icon: typeof Sun }[] = [
     { v: "light", label: "Sáng", icon: Sun },
     { v: "dark", label: "Tối", icon: Moon },
@@ -169,6 +173,33 @@ function PreferencesCard() {
     { v: "md", label: "Vừa", sample: "16px" },
     { v: "lg", label: "Lớn", sample: "18px" },
   ];
+  const backgrounds: { v: BackgroundId; label: string }[] = [
+    { v: "default", label: "Mặc định" },
+    { v: "aurora", label: "Aurora" },
+    { v: "sunset", label: "Sunset" },
+    { v: "ocean", label: "Ocean" },
+    { v: "minimal", label: "Trơn" },
+  ];
+
+  async function onPickBg(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+    if (!file.type.startsWith("image/")) return toast.error("Vui lòng chọn file ảnh");
+    if (file.size > 8 * 1024 * 1024) return toast.error("Ảnh tối đa 8MB");
+    setBgUploading(true);
+    const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+    const path = `${user.id}/background-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type });
+    if (upErr) { setBgUploading(false); return toast.error(upErr.message); }
+    const { data: signed, error: sErr } = await supabase.storage.from("avatars").createSignedUrl(path, 60 * 60 * 24 * 365);
+    setBgUploading(false);
+    if (sErr || !signed) return toast.error(sErr?.message ?? "Không tạo được URL");
+    setBackgroundUrl(signed.signedUrl);
+    setBackground("custom");
+    toast.success("Đã cập nhật hình nền");
+  }
+
   return (
     <div className="surface rounded-xl border p-6 space-y-5 mt-6">
       <h2 className="text-lg font-semibold">Cá nhân hóa</h2>
@@ -204,6 +235,52 @@ function PreferencesCard() {
               <div className="text-xs opacity-70">{sample}</div>
             </button>
           ))}
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Hình nền</Label>
+        <div className="grid grid-cols-5 gap-2">
+          {backgrounds.map(({ v, label }) => (
+            <button
+              key={v}
+              onClick={() => setBackground(v)}
+              className={`rounded-md border overflow-hidden transition-all ${
+                background === v ? "border-primary ring-2 ring-primary/40" : "border-border hover:border-primary/50"
+              }`}
+              title={label}
+            >
+              <div className="h-14 w-full" style={{ background: BG_PRESETS[v as Exclude<BackgroundId, "custom">] }} />
+              <div className="text-xs py-1 text-center">{label}</div>
+            </button>
+          ))}
+          <button
+            onClick={() => backgroundUrl && setBackground("custom")}
+            className={`rounded-md border overflow-hidden transition-all ${
+              background === "custom" ? "border-primary ring-2 ring-primary/40" : "border-border hover:border-primary/50"
+            }`}
+            title="Tùy chỉnh"
+          >
+            <div
+              className="h-14 w-full flex items-center justify-center bg-muted"
+              style={backgroundUrl ? { backgroundImage: `url("${backgroundUrl}")`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
+            >
+              {!backgroundUrl && <ImageIcon className="size-4 text-muted-foreground" />}
+            </div>
+            <div className="text-xs py-1 text-center">Tùy chỉnh</div>
+          </button>
+        </div>
+        <div className="flex gap-2 items-center pt-1">
+          <input ref={bgFileRef} type="file" accept="image/*" className="hidden" onChange={onPickBg} />
+          <Button variant="outline" size="sm" onClick={() => bgFileRef.current?.click()} disabled={bgUploading}>
+            {bgUploading ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Upload className="size-3.5 mr-1.5" />}
+            {bgUploading ? "Đang tải..." : "Tải ảnh nền"}
+          </Button>
+          <Input
+            value={backgroundUrl}
+            onChange={(e) => setBackgroundUrl(e.target.value)}
+            placeholder="hoặc dán URL ảnh nền..."
+            className="flex-1"
+          />
         </div>
       </div>
     </div>
