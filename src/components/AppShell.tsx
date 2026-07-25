@@ -2,7 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Inbox, Sparkles, BarChart3, LogOut, Bell } from "lucide-react";
+import { Calendar, Inbox, Sparkles, BarChart3, LogOut, Bell, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useReminders } from "@/hooks/useReminders";
@@ -18,7 +18,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, profile, signOut } = useAuth();
   const loc = useLocation();
   const [unread, setUnread] = useState(0);
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("mt.sidebar.collapsed") === "1";
+  });
   useReminders();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("mt.sidebar.collapsed", collapsed ? "1" : "0");
+    }
+  }, [collapsed]);
 
   useEffect(() => {
     if (!user) return;
@@ -32,19 +42,51 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const initial = (profile?.display_name || user?.email || "?").charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen flex">
-      <aside className="w-60 border-r bg-sidebar flex flex-col">
-        <Link to="/profile" className="px-5 py-5 flex items-center gap-2 hover:opacity-80 transition-opacity" title="Đổi logo trong Hồ sơ">
-          {profile?.avatar_url ? (
-            <img src={profile.avatar_url} alt="Logo" className="size-8 rounded-lg object-cover" />
-          ) : (
-            <div className="size-8 rounded-lg grad-primary flex items-center justify-center">
-              <Sparkles className="size-4 text-primary-foreground" />
-            </div>
+    <div className="min-h-screen flex w-full">
+      <aside
+        className={`${collapsed ? "w-16" : "w-60"} border-r bg-sidebar flex flex-col transition-[width] duration-200`}
+      >
+        <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} gap-2 px-3 py-4`}>
+          <Link
+            to="/profile"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity min-w-0"
+            title="Đổi logo trong Hồ sơ"
+          >
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="Logo" className="size-8 rounded-lg object-cover shrink-0" />
+            ) : (
+              <div className="size-8 rounded-lg grad-primary flex items-center justify-center shrink-0">
+                <Sparkles className="size-4 text-primary-foreground" />
+              </div>
+            )}
+            {!collapsed && <div className="font-semibold tracking-tight truncate">Master Task</div>}
+          </Link>
+          {!collapsed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7 shrink-0"
+              onClick={() => setCollapsed(true)}
+              title="Thu gọn"
+            >
+              <PanelLeftClose className="size-4" />
+            </Button>
           )}
-          <div className="font-semibold tracking-tight">Master Task</div>
-        </Link>
-        <nav className="px-3 flex-1 space-y-1">
+        </div>
+        {collapsed && (
+          <div className="px-2 pb-2 flex justify-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              onClick={() => setCollapsed(false)}
+              title="Mở rộng"
+            >
+              <PanelLeftOpen className="size-4" />
+            </Button>
+          </div>
+        )}
+        <nav className={`${collapsed ? "px-2" : "px-3"} flex-1 space-y-1`}>
           {NAV.map((n) => {
             const active = loc.pathname === n.to;
             const Icon = n.icon;
@@ -52,32 +94,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={n.to}
                 to={n.to}
-                className={`flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm transition-colors ${
+                title={collapsed ? n.label : undefined}
+                className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} gap-2 rounded-md ${collapsed ? "px-2" : "px-3"} py-2 text-sm transition-colors ${
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
                 }`}
               >
-                <span className="flex items-center gap-2">
-                  <Icon className="size-4" />
-                  {n.label}
+                <span className="flex items-center gap-2 min-w-0">
+                  <Icon className="size-4 shrink-0" />
+                  {!collapsed && <span className="truncate">{n.label}</span>}
                 </span>
-                {n.to === "/notifications" && unread > 0 && (
+                {!collapsed && n.to === "/notifications" && unread > 0 && (
                   <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-primary/20 text-primary">{unread}</span>
+                )}
+                {collapsed && n.to === "/notifications" && unread > 0 && (
+                  <span className="absolute ml-5 -mt-4 text-[9px] font-mono px-1 rounded-md bg-primary/30 text-primary">{unread}</span>
                 )}
               </Link>
             );
           })}
         </nav>
-        <div className="p-3 border-t flex items-center gap-2">
+        <div className={`p-3 border-t flex items-center gap-2 ${collapsed ? "flex-col" : ""}`}>
           <Avatar className="size-8">
             {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
             <AvatarFallback className="bg-primary/20 text-primary text-xs">{initial}</AvatarFallback>
           </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm truncate">{profile?.display_name || user?.email}</div>
-            <Link to="/profile" className="text-xs text-muted-foreground hover:text-foreground">Hồ sơ</Link>
-          </div>
+          {!collapsed && (
+            <div className="flex-1 min-w-0">
+              <div className="text-sm truncate">{profile?.display_name || user?.email}</div>
+              <Link to="/profile" className="text-xs text-muted-foreground hover:text-foreground">Hồ sơ</Link>
+            </div>
+          )}
           <Button variant="ghost" size="icon" onClick={signOut} title="Đăng xuất">
             <LogOut className="size-4" />
           </Button>
