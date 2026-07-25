@@ -14,21 +14,46 @@ const NAV = [
   { to: "/notifications", label: "Thông báo", icon: Bell },
 ];
 
+type ViewMode = "day" | "week" | "month";
+const COLLAPSE_KEY = (m: ViewMode) => `mt.sidebar.collapsed.${m}`;
+const readCollapsed = (m: ViewMode): boolean => {
+  if (typeof window === "undefined") return false;
+  const scoped = localStorage.getItem(COLLAPSE_KEY(m));
+  if (scoped !== null) return scoped === "1";
+  // Fallback to legacy global key on first run
+  return localStorage.getItem("mt.sidebar.collapsed") === "1";
+};
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, profile, signOut } = useAuth();
   const loc = useLocation();
   const [unread, setUnread] = useState(0);
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("mt.sidebar.collapsed") === "1";
+  const [mode, setMode] = useState<ViewMode>(() => {
+    if (typeof window === "undefined") return "week";
+    const v = localStorage.getItem("mt.viewMode");
+    return v === "day" || v === "week" || v === "month" ? v : "week";
   });
+  const [collapsed, setCollapsedState] = useState<boolean>(() => readCollapsed(mode));
   useReminders();
 
   useEffect(() => {
+    const onMode = (e: Event) => {
+      const m = (e as CustomEvent).detail as ViewMode;
+      if (m === "day" || m === "week" || m === "month") {
+        setMode(m);
+        setCollapsedState(readCollapsed(m));
+      }
+    };
+    window.addEventListener("mt:viewmode", onMode);
+    return () => window.removeEventListener("mt:viewmode", onMode);
+  }, []);
+
+  const setCollapsed = (v: boolean) => {
+    setCollapsedState(v);
     if (typeof window !== "undefined") {
-      localStorage.setItem("mt.sidebar.collapsed", collapsed ? "1" : "0");
+      localStorage.setItem(COLLAPSE_KEY(mode), v ? "1" : "0");
     }
-  }, [collapsed]);
+  };
 
   useEffect(() => {
     if (!user) return;
