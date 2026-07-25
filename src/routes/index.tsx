@@ -78,7 +78,24 @@ type ViewMode = "day" | "week" | "month";
 function WeekView() {
   const { user, profile } = useAuth();
   const greetName = profile?.display_name || user?.email?.split("@")[0] || "bạn";
-  const [mode, setMode] = useState<ViewMode>("week");
+  const [mode, setModeState] = useState<ViewMode>(() => {
+    if (typeof window === "undefined") return "week";
+    const v = localStorage.getItem("mt.viewMode");
+    return v === "day" || v === "week" || v === "month" ? v : "week";
+  });
+  const setMode = (m: ViewMode) => {
+    setModeState(m);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("mt.viewMode", m);
+      window.dispatchEvent(new CustomEvent("mt:viewmode", { detail: m }));
+    }
+  };
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("mt:viewmode", { detail: mode }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [anchor, setAnchor] = useState(() => new Date());
 
   const days = useMemo(() => {
