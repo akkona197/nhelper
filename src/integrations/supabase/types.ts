@@ -216,6 +216,50 @@ export type Database = {
           },
         ]
       }
+      task_notes: {
+        Row: {
+          author_name: string
+          author_role: string | null
+          body: string
+          created_at: string
+          id: string
+          scheduled_date: string | null
+          task_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          author_name?: string
+          author_role?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          scheduled_date?: string | null
+          task_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          author_name?: string
+          author_role?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          scheduled_date?: string | null
+          task_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_notes_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           color: string | null
