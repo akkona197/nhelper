@@ -1,4 +1,11 @@
 -- Bảng ghim (pinboard): lưu các thông báo/ghi chú quan trọng dưới dạng giấy note trên bảng
+
+-- Đảm bảo hàm cập nhật updated_at tồn tại (tự chủ, không phụ thuộc migration cũ)
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS trigger AS $$
+BEGIN new.updated_at = now(); RETURN new; END;
+$$ LANGUAGE plpgsql SET search_path = public;
+
 CREATE TABLE public.board_notes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
