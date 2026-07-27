@@ -73,15 +73,15 @@ const PRIORITY_DOT: Record<string, string> = {
   low: "bg-[var(--color-priority-low)]",
 };
 
-type ViewMode = "day" | "week" | "month";
+type ViewMode = "day" | "3days" | "week" | "month";
 
 function WeekView() {
   const { user, profile } = useAuth();
   const greetName = profile?.display_name || user?.email?.split("@")[0] || "bạn";
   const [mode, setModeState] = useState<ViewMode>(() => {
-    if (typeof window === "undefined") return "week";
+    if (typeof window === "undefined") return "3days";
     const v = localStorage.getItem("mt.viewMode");
-    return v === "day" || v === "week" || v === "month" ? v : "week";
+    return v === "day" || v === "3days" || v === "week" || v === "month" ? v : "3days";
   });
   const setMode = (m: ViewMode) => {
     setModeState(m);
@@ -100,6 +100,7 @@ function WeekView() {
 
   const days = useMemo(() => {
     if (mode === "day") return [anchor];
+    if (mode === "3days") return [addDays(anchor, -1), anchor, addDays(anchor, 1)];
     if (mode === "week") return getWeekDays(getWeekStart(anchor));
     const first = startOfMonth(anchor);
     const last = endOfMonth(anchor);
@@ -454,6 +455,7 @@ function WeekView() {
 
   function shift(dir: -1 | 1) {
     if (mode === "day") setAnchor(addDays(anchor, dir));
+    else if (mode === "3days") setAnchor(addDays(anchor, dir * 3));
     else if (mode === "week") setAnchor(addWeeks(anchor, dir));
     else setAnchor(addMonths(anchor, dir));
   }
@@ -462,8 +464,8 @@ function WeekView() {
   const rangeLabel =
     mode === "day"
       ? format(anchor, "EEEE, dd MMM yyyy", { locale: vi })
-      : mode === "week"
-        ? `${format(days[0], "dd MMM", { locale: vi })} – ${format(days[6], "dd MMM yyyy", { locale: vi })}`
+      : mode === "week" || mode === "3days"
+        ? `${format(days[0], "dd MMM", { locale: vi })} – ${format(days[days.length - 1], "dd MMM yyyy", { locale: vi })}`
         : format(anchor, "MMMM yyyy", { locale: vi });
 
   const ModeBtn = ({ v, label }: { v: ViewMode; label: string }) => (
@@ -489,6 +491,7 @@ function WeekView() {
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-0.5 p-1 rounded-lg bg-secondary border border-border">
             <ModeBtn v="day" label="Ngày" />
+            <ModeBtn v="3days" label="3 ngày" />
             <ModeBtn v="week" label="Tuần" />
             <ModeBtn v="month" label="Tháng" />
           </div>
@@ -608,14 +611,14 @@ function WeekView() {
               <div
                 key={dStr}
                 {...dragHandlers(dStr)}
-                style={mode === "week" ? { width: colWidths[idx], flex: "0 0 auto" } : undefined}
+                style={mode !== "day" ? { width: colWidths[idx], flex: "0 0 auto" } : undefined}
                 className={`relative surface rounded-xl border p-3 flex flex-col transition-colors ${
                   mode === "day" ? "min-h-[420px]" : "min-h-[280px]"
                 } ${isToday ? "ring-1 ring-primary/60 glow" : ""} ${
                   dragOverDay === dStr ? "ring-2 ring-primary bg-primary/5" : ""
                 }`}
               >
-                {mode === "week" && (
+                {mode !== "day" && (
                   <div
                     onMouseDown={(e) => startResize(idx, e)}
                     className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-primary/40 active:bg-primary/60 transition-colors z-10"

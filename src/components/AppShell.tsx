@@ -14,7 +14,7 @@ const NAV = [
   { to: "/notifications", label: "Thông báo", icon: Bell },
 ];
 
-type ViewMode = "day" | "week" | "month";
+type ViewMode = "day" | "3days" | "week" | "month";
 const COLLAPSE_KEY = (m: ViewMode) => `mt.sidebar.collapsed.${m}`;
 const readCollapsed = (m: ViewMode): boolean => {
   if (typeof window === "undefined") return false;
@@ -29,9 +29,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const loc = useLocation();
   const [unread, setUnread] = useState(0);
   const [mode, setMode] = useState<ViewMode>(() => {
-    if (typeof window === "undefined") return "week";
+    if (typeof window === "undefined") return "3days";
     const v = localStorage.getItem("mt.viewMode");
-    return v === "day" || v === "week" || v === "month" ? v : "week";
+    return v === "day" || v === "3days" || v === "week" || v === "month" ? v : "3days";
   });
   const [collapsed, setCollapsedState] = useState<boolean>(() => readCollapsed(mode));
   useReminders();
@@ -39,7 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const onMode = (e: Event) => {
       const m = (e as CustomEvent).detail as ViewMode;
-      if (m === "day" || m === "week" || m === "month") {
+      if (m === "day" || m === "3days" || m === "week" || m === "month") {
         setMode(m);
         setCollapsedState(readCollapsed(m));
       }
