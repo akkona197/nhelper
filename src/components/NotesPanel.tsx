@@ -9,7 +9,7 @@ import { vi } from "date-fns/locale";
 import { RichEditor } from "@/components/RichEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trash2, Send } from "lucide-react";
+import { Trash2, Send, Maximize2, Minimize2 } from "lucide-react";
 
 type Props = {
   open: boolean;
@@ -71,7 +71,19 @@ export function NotesPanel({ open, onOpenChange, task, date, instance, onSaved }
   const [authorRole, setAuthorRole] = useState("");
   const [sending, setSending] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
+  const [expanded, setExpanded] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("mt.notes.expanded") === "1";
+  });
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const toggleExpanded = () => {
+    setExpanded((v) => {
+      const next = !v;
+      if (typeof window !== "undefined") localStorage.setItem("mt.notes.expanded", next ? "1" : "0");
+      return next;
+    });
+  };
 
   const defaultName = profile?.display_name || user?.email?.split("@")[0] || "Tôi";
 
@@ -139,8 +151,11 @@ export function NotesPanel({ open, onOpenChange, task, date, instance, onSaved }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0">
-        <SheetHeader className="px-5 pt-5 pb-3 border-b border-border">
+      <SheetContent
+        side="right"
+        className={`w-full ${expanded ? "sm:max-w-3xl" : "sm:max-w-lg"} flex flex-col p-0 overflow-hidden transition-[max-width] duration-200`}
+      >
+        <SheetHeader className="shrink-0 px-5 pt-5 pb-3 border-b border-border">
           <SheetTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
             Internal note
           </SheetTitle>
@@ -148,9 +163,17 @@ export function NotesPanel({ open, onOpenChange, task, date, instance, onSaved }
             {task?.title ?? ""}
             {date ? ` — ${format(date, "EEEE, dd MMM yyyy", { locale: vi })}` : ""}
           </SheetDescription>
+          <button
+            onClick={toggleExpanded}
+            title={expanded ? "Thu nhỏ" : "Phóng to"}
+            className="absolute right-12 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          >
+            {expanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+            <span className="sr-only">{expanded ? "Thu nhỏ" : "Phóng to"}</span>
+          </button>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-4">
           {loading && <div className="text-xs text-muted-foreground">Đang tải lịch sử...</div>}
           {!loading && notes.length === 0 && (
             <div className="text-xs text-muted-foreground">
@@ -206,7 +229,7 @@ export function NotesPanel({ open, onOpenChange, task, date, instance, onSaved }
           <div ref={bottomRef} />
         </div>
 
-        <div className="border-t border-border px-5 py-3 space-y-2">
+        <div className="shrink-0 border-t border-border px-5 py-3 space-y-2">
           <div className="flex gap-2">
             <Input
               value={authorName}
