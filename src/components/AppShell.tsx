@@ -69,7 +69,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex w-full">
       <aside
-        className={`${collapsed ? "w-16" : "w-60"} border-r bg-sidebar flex flex-col transition-[width] duration-200`}
+        className={`${collapsed ? "w-16" : "w-60"} border-r bg-sidebar flex flex-col transition-[width] duration-200 sticky top-0 h-screen`}
       >
         <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} gap-2 px-3 py-4`}>
           <Link
@@ -111,7 +111,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Button>
           </div>
         )}
-        <nav className={`${collapsed ? "px-2" : "px-3"} flex-1 space-y-1`}>
+        <nav className={`${collapsed ? "px-2" : "px-3"} flex-1 space-y-1 overflow-y-auto`}>
           {NAV.map((n) => {
             const active = loc.pathname === n.to;
             const Icon = n.icon;
