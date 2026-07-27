@@ -148,6 +148,31 @@ function WeekView() {
   useEffect(() => {
     try { localStorage.setItem("mt.colWidths", JSON.stringify(colWidths)); } catch {}
   }, [colWidths]);
+
+  // Auto-fit: khi đổi chế độ xem (Ngày/3 ngày/Tuần) hoặc đổi kích thước cửa sổ,
+  // căn chỉnh các cột cho đều và vừa khít chiều rộng màn hình.
+  const colsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (mode === "day" || mode === "month") return;
+    const el = colsRef.current;
+    if (!el) return;
+    const n = days.length;
+    if (n <= 0) return;
+    const GAP = 12; // khớp với gap-3 (0.75rem)
+    const fit = () => {
+      const avail = el.clientWidth;
+      if (avail <= 0) return;
+      const even = Math.max(140, Math.floor((avail - GAP * (n - 1)) / n));
+      setColWidths((prev) => {
+        if (prev.every((w) => w === even)) return prev;
+        return prev.map(() => even);
+      });
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, days.length]);
   function startResize(idx: number, e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
@@ -596,6 +621,7 @@ function WeekView() {
         />
       ) : (
         <div
+          ref={colsRef}
           className={
             mode === "day"
               ? "grid grid-cols-1 gap-3 max-w-2xl mx-auto"
