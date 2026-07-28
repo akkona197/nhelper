@@ -9,6 +9,7 @@ export type BackgroundId =
   | "ocean"
   | "minimal"
   | "hologram"
+  | "holopastel"
   | "nebula"
   | "waves"
   | "custom";
@@ -18,6 +19,7 @@ type Prefs = {
   fontSize: FontSize;
   fontFamily: string;
   accent: string;
+  textColor: string;
   glass: boolean;
   background: BackgroundId;
   backgroundUrl: string;
@@ -25,6 +27,7 @@ type Prefs = {
   setFontSize: (f: FontSize) => void;
   setFontFamily: (f: string) => void;
   setAccent: (a: string) => void;
+  setTextColor: (c: string) => void;
   setGlass: (g: boolean) => void;
   setBackground: (b: BackgroundId) => void;
   setBackgroundUrl: (u: string) => void;
@@ -91,15 +94,28 @@ export const BG_PRESETS: Record<"default" | "aurora" | "sunset" | "ocean" | "min
   minimal: "var(--color-background)",
 };
 
+// Màu chữ tuỳ chọn (ghi đè --foreground). value = null nghĩa là màu mặc định theo theme.
+export const TEXT_COLORS: Record<string, { label: string; swatch: string; value?: string }> = {
+  default: { label: "Mặc định", swatch: "var(--color-foreground)" },
+  white: { label: "Trắng", swatch: "#ffffff", value: "oklch(0.98 0 0)" },
+  black: { label: "Đen", swatch: "#111111", value: "oklch(0.20 0.02 270)" },
+  slate: { label: "Xám xanh", swatch: "#334155", value: "oklch(0.36 0.03 250)" },
+  navy: { label: "Xanh mực", swatch: "#1e3a8a", value: "oklch(0.42 0.12 265)" },
+  wine: { label: "Đỏ mận", swatch: "#7f1d1d", value: "oklch(0.45 0.15 20)" },
+  emerald: { label: "Lục bảo", swatch: "#065f46", value: "oklch(0.50 0.12 160)" },
+};
+
 // Background động: ánh xạ sang class CSS (định nghĩa trong styles.css)
 export const ANIM_BG: Record<string, string> = {
   hologram: "bg-anim-hologram",
+  holopastel: "bg-anim-holopastel",
   nebula: "bg-anim-nebula",
   waves: "bg-anim-waves",
 };
 // Ảnh xem trước (tĩnh) cho các nền động trong ô chọn
 export const ANIM_BG_PREVIEW: Record<string, string> = {
   hologram: "linear-gradient(125deg,#0ea5e9,#8b5cf6,#ec4899,#22d3ee)",
+  holopastel: "linear-gradient(115deg,#ffd1dc,#c8f7e0,#d5c9ff,#ffe6c7,#c7e9ff,#ffd1f0)",
   nebula: "radial-gradient(circle at 25% 25%, #a855f7aa, transparent 60%), radial-gradient(circle at 80% 80%, #38bdf8aa, transparent 60%), #0f172a",
   waves: "linear-gradient(60deg,#3b82f6,#22d3ee,#3b82f6)",
 };
@@ -120,6 +136,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [fontSize, setFontSizeState] = useState<FontSize>("md");
   const [fontFamily, setFontFamilyState] = useState<string>("inter");
   const [accent, setAccentState] = useState<string>("default");
+  const [textColor, setTextColorState] = useState<string>("default");
   const [glass, setGlassState] = useState<boolean>(false);
   const [background, setBackgroundState] = useState<BackgroundId>("default");
   const [backgroundUrl, setBackgroundUrlState] = useState<string>("");
@@ -129,10 +146,19 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     setFontSizeState((localStorage.getItem("pref:fontSize") as FontSize) || "md");
     setFontFamilyState(localStorage.getItem("pref:fontFamily") || "inter");
     setAccentState(localStorage.getItem("pref:accent") || "default");
+    setTextColorState(localStorage.getItem("pref:textColor") || "default");
     setGlassState(localStorage.getItem("pref:glass") === "1");
     setBackgroundState((localStorage.getItem("pref:background") as BackgroundId) || "default");
     setBackgroundUrlState(localStorage.getItem("pref:backgroundUrl") || "");
   }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const c = TEXT_COLORS[textColor];
+    if (!c || !c.value) root.style.removeProperty("--foreground");
+    else root.style.setProperty("--foreground", c.value);
+    localStorage.setItem("pref:textColor", textColor);
+  }, [textColor]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("theme-glass", glass);
@@ -199,6 +225,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         fontSize,
         fontFamily,
         accent,
+        textColor,
         glass,
         background,
         backgroundUrl,
@@ -206,6 +233,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         setFontSize: setFontSizeState,
         setFontFamily: setFontFamilyState,
         setAccent: setAccentState,
+        setTextColor: setTextColorState,
         setGlass: setGlassState,
         setBackground: setBackgroundState,
         setBackgroundUrl: setBackgroundUrlState,

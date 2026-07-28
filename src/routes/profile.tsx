@@ -3,7 +3,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { usePreferences, type Theme, type FontSize, type BackgroundId, BG_PRESETS, FONTS, ACCENTS, ANIM_BG_PREVIEW } from "@/context/PreferencesContext";
+import { usePreferences, type Theme, type FontSize, type BackgroundId, BG_PRESETS, FONTS, ACCENTS, TEXT_COLORS, ANIM_BG_PREVIEW } from "@/context/PreferencesContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -161,8 +161,8 @@ function ProfilePage() {
 function PreferencesCard() {
   const { user } = useAuth();
   const {
-    theme, fontSize, fontFamily, accent, glass, background, backgroundUrl,
-    setTheme, setFontSize, setFontFamily, setAccent, setGlass, setBackground, setBackgroundUrl,
+    theme, fontSize, fontFamily, accent, textColor, glass, background, backgroundUrl,
+    setTheme, setFontSize, setFontFamily, setAccent, setTextColor, setGlass, setBackground, setBackgroundUrl,
   } = usePreferences();
   const bgFileRef = useRef<HTMLInputElement>(null);
   const [bgUploading, setBgUploading] = useState(false);
@@ -183,6 +183,7 @@ function PreferencesCard() {
     { v: "ocean", label: "Ocean", preview: BG_PRESETS.ocean },
     { v: "minimal", label: "Trơn", preview: BG_PRESETS.minimal },
     { v: "hologram", label: "Hologram ✨", preview: ANIM_BG_PREVIEW.hologram },
+    { v: "holopastel", label: "Hologram Pastel ✨", preview: ANIM_BG_PREVIEW.holopastel },
     { v: "nebula", label: "Nebula ⟳", preview: ANIM_BG_PREVIEW.nebula },
     { v: "waves", label: "Sóng ⟳", preview: ANIM_BG_PREVIEW.waves },
   ];
@@ -275,6 +276,24 @@ function PreferencesCard() {
               }`}
               style={{ background: a.swatch }}
             />
+          ))}
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Màu chữ</Label>
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(TEXT_COLORS).map(([k, c]) => (
+            <button
+              key={k}
+              onClick={() => setTextColor(k)}
+              title={c.label}
+              className={`size-8 rounded-full border grid place-items-center text-xs font-bold transition-transform hover:scale-110 ${
+                textColor === k ? "ring-2 ring-offset-2 ring-offset-background ring-primary" : "border-black/10"
+              }`}
+              style={{ background: c.swatch, color: k === "white" || k === "default" ? "#111" : "#fff" }}
+            >
+              A
+            </button>
           ))}
         </div>
       </div>

@@ -223,8 +223,22 @@ body.bg-anim-waves {
   animation: bgWavesShift 18s linear infinite;
 }
 
+/* Hologram pastel (giống ảnh 4K, dùng gradient nên nét ở mọi độ phân giải) */
+@keyframes bgHoloPastel {
+  0% { background-position: 0% 50%, 0% 50%; }
+  50% { background-position: 100% 50%, 100% 35%; }
+  100% { background-position: 0% 50%, 0% 50%; }
+}
+body.bg-anim-holopastel {
+  background:
+    radial-gradient(70% 60% at 30% 25%, rgba(255, 255, 255, 0.55), transparent 60%),
+    linear-gradient(115deg, #ffd1dc, #c8f7e0, #d5c9ff, #ffe6c7, #c7e9ff, #ffd1f0, #b5e8ff, #ffd1dc);
+  background-size: 220% 220%, 400% 400%;
+  animation: bgHoloPastel 26s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  body.bg-anim-hologram, body.bg-anim-nebula, body.bg-anim-waves { animation: none; }
+  body.bg-anim-hologram, body.bg-anim-holopastel, body.bg-anim-nebula, body.bg-anim-waves { animation: none; }
 }
 
 /* ===== Template trong suốt (kính mờ / glassmorphism) ===== */
