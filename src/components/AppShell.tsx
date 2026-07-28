@@ -6,6 +6,7 @@ import { Home, Calendar, Inbox, Sparkles, BarChart3, LogOut, Bell, Pin, MessageS
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useReminders } from "@/hooks/useReminders";
+import { Mascot } from "@/components/Mascot";
 
 const NAV = [
   { to: "/", label: "Trang chủ", icon: Home },
@@ -160,6 +161,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <main className="flex-1 min-w-0">{children}</main>
+      <Mascot />
     </div>
   );
 }

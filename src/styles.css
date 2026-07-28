@@ -241,6 +241,11 @@ body.bg-anim-holopastel {
   body.bg-anim-hologram, body.bg-anim-holopastel, body.bg-anim-nebula, body.bg-anim-waves { animation: none; }
 }
 
+/* Linh vật túi lúa mì */
+@keyframes mascotFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.mascot-float { animation: mascotFloat 4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .mascot-float { animation: none; } }
+
 /* ===== Template trong suốt (kính mờ / glassmorphism) ===== */
 .theme-glass .surface {
   background: color-mix(in oklab, var(--color-card), transparent 45%);
