@@ -6,7 +6,7 @@ const POS_KEY = "mt.mascot.pos";
 
 type Pos = { x: number; y: number };
 
-// Nhắc nhở dân văn phòng (đổi mỗi ~1 phút)
+// Nhắc nhở dân văn phòng (đổi mỗi ~1 phút và khi click)
 const REMINDERS = [
   "Uống một ngụm nước nào! 💧",
   "Đứng dậy vươn vai một chút nhé! 🙆",
@@ -18,10 +18,21 @@ const REMINDERS = [
   "Xoay cổ tay, duỗi ngón tay chút nào ✋",
   "Nghỉ tay 1 phút rồi làm tiếp nha ☕",
   "Uống đủ nước giúp tập trung hơn đó! 💧",
-  "Bạn đang làm rất tốt, cố lên nhé! 😊",
   "Thư giãn mắt: nhìn cây xanh 20 giây 🌿",
 ];
+const ENCOURAGE = [
+  "Bạn đang làm rất tốt, cố lên nhé! 😊",
+  "Từng bước nhỏ cũng là tiến bộ 💪",
+  "Tin ở bản thân nha, bạn làm được! ✨",
+  "Kiên trì chút nữa thôi là xong! 🌟",
+  "Mình luôn ở đây cổ vũ bạn 🌾",
+];
+const CLICK_MSGS = [...REMINDERS, ...ENCOURAGE];
 const CHEERS = ["Tuyệt vời! Xong một việc rồi 🎉", "Giỏi quá đi! ✨", "Yeah! Tick thêm một ô 💪", "Làm tốt lắm! 👏"];
+
+function pick(arr: string[]) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 
 function defaultPos(w: number): Pos {
   if (typeof window === "undefined") return { x: 24, y: 24 };
@@ -43,6 +54,8 @@ export function Mascot() {
   const [bubble, setBubble] = useState<string | null>(null);
   const [anim, setAnim] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
+  const leftPupil = useRef<SVGGElement>(null);
+  const rightPupil = useRef<SVGGElement>(null);
   const dragging = useRef(false);
   const bubbleTimer = useRef<number | undefined>(undefined);
 
@@ -52,13 +65,42 @@ export function Mascot() {
     bubbleTimer.current = window.setTimeout(() => setBubble(null), ms);
   }
 
+  // Con ngươi nhìn theo chuột (đôi mắt vẽ đè lên ảnh)
+  useEffect(() => {
+    let raf = 0;
+    const onMove = (e: MouseEvent) => {
+      if (dragging.current) return;
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const el = rootRef.current;
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        const move = (fx: number, fy: number, g: SVGGElement | null) => {
+          if (!g) return;
+          const ex = r.left + r.width * fx;
+          const ey = r.top + r.height * fy;
+          const ang = Math.atan2(e.clientY - ey, e.clientX - ex);
+          const dist = Math.min(15, Math.hypot(e.clientX - ex, e.clientY - ey) / 9);
+          g.setAttribute("transform", `translate(${Math.cos(ang) * dist} ${Math.sin(ang) * dist})`);
+        };
+        move(0.449, 0.684, leftPupil.current);
+        move(0.625, 0.684, rightPupil.current);
+      });
+    };
+    window.addEventListener("mousemove", onMove);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
   // Nhắc nhở mỗi ~1 phút + lời chào ban đầu
   useEffect(() => {
     if (!mascotOn) return;
     const hi = window.setTimeout(() => say("Chào bạn, mình là Bé Lúa! Cùng làm việc nhé 🌾", 7000), 4000);
     const iv = window.setInterval(() => {
       if (dragging.current) return;
-      say(REMINDERS[Math.floor(Math.random() * REMINDERS.length)]);
+      say(pick(REMINDERS));
     }, 60000);
     return () => {
       window.clearTimeout(hi);
@@ -72,13 +114,13 @@ export function Mascot() {
     const onDone = () => {
       setAnim("mascot-jump");
       window.setTimeout(() => setAnim(""), 700);
-      say(CHEERS[Math.floor(Math.random() * CHEERS.length)], 5000);
+      say(pick(CHEERS), 5000);
     };
     window.addEventListener("mt:taskdone", onDone);
     return () => window.removeEventListener("mt:taskdone", onDone);
   }, []);
 
-  // Lắc/nhún nhẹ định kỳ (như chớp mắt/cựa quậy)
+  // Lắc/nhún nhẹ định kỳ
   useEffect(() => {
     if (!mascotOn) return;
     const iv = window.setInterval(() => {
@@ -92,10 +134,14 @@ export function Mascot() {
   function startDrag(e: React.PointerEvent) {
     e.preventDefault();
     dragging.current = true;
+    const startX = e.clientX;
+    const startY = e.clientY;
     const offX = e.clientX - pos.x;
     const offY = e.clientY - pos.y;
     let last = pos;
+    let moved = false;
     const onMove = (ev: PointerEvent) => {
+      if (Math.hypot(ev.clientX - startX, ev.clientY - startY) > 4) moved = true;
       last = {
         x: Math.max(0, Math.min(window.innerWidth - W, ev.clientX - offX)),
         y: Math.max(0, Math.min(window.innerHeight - 40, ev.clientY - offY)),
@@ -106,9 +152,16 @@ export function Mascot() {
       dragging.current = false;
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
-      try {
-        localStorage.setItem(POS_KEY, JSON.stringify(last));
-      } catch {}
+      if (moved) {
+        try {
+          localStorage.setItem(POS_KEY, JSON.stringify(last));
+        } catch {}
+      } else {
+        // Click (không kéo) -> hiện câu nhắc nhở/động viên
+        setAnim("mascot-wiggle");
+        window.setTimeout(() => setAnim(""), 800);
+        say(pick(CLICK_MSGS), 6000);
+      }
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
@@ -133,8 +186,9 @@ export function Mascot() {
 
       <div
         onPointerDown={startDrag}
-        title="Bé Lúa — kéo tớ đi chỗ khác nhé!"
-        className={`cursor-grab active:cursor-grabbing mascot-float ${anim}`}
+        title="Bé Lúa — kéo tớ đi, hoặc bấm để nghe lời nhắn nhé!"
+        className={`relative cursor-grab active:cursor-grabbing mascot-float ${anim}`}
+        style={{ width: W, height: W }}
       >
         <img
           src={beLuaImg}
@@ -142,8 +196,21 @@ export function Mascot() {
           draggable={false}
           width={W}
           height={W}
-          className="drop-shadow-lg pointer-events-none"
+          className="drop-shadow-lg pointer-events-none block"
         />
+        {/* Đôi mắt động vẽ đè lên ảnh */}
+        <svg viewBox="0 0 1024 1024" className="absolute inset-0 pointer-events-none" width={W} height={W}>
+          <ellipse cx="460" cy="700" rx="30" ry="36" fill="#fdf6ec" stroke="#4a3320" strokeWidth="5" />
+          <ellipse cx="640" cy="700" rx="30" ry="36" fill="#fdf6ec" stroke="#4a3320" strokeWidth="5" />
+          <g ref={leftPupil}>
+            <circle cx="460" cy="704" r="15" fill="#2a1c10" />
+            <circle cx="465" cy="698" r="5" fill="#fff" />
+          </g>
+          <g ref={rightPupil}>
+            <circle cx="640" cy="704" r="15" fill="#2a1c10" />
+            <circle cx="645" cy="698" r="5" fill="#fff" />
+          </g>
+        </svg>
       </div>
     </div>
   );
