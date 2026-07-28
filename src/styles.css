@@ -192,3 +192,37 @@
     color: transparent;
   }
 }
+
+/* ===== Background động (cá nhân hóa trong Hồ sơ) ===== */
+@keyframes bgHoloShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+@keyframes bgNebulaShift { 0% { background-position: 0% 0%, 100% 100%; } 50% { background-position: 100% 60%, 0% 40%; } 100% { background-position: 0% 0%, 100% 100%; } }
+@keyframes bgWavesShift { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+
+body.bg-anim-hologram {
+  background:
+    linear-gradient(125deg, oklch(0.6 0.2 285 / 0.45), oklch(0.62 0.16 215 / 0.4), oklch(0.62 0.2 340 / 0.4), oklch(0.62 0.16 195 / 0.4), oklch(0.6 0.2 285 / 0.45)),
+    var(--color-background);
+  background-size: 320% 320%, 100% 100%;
+  animation: bgHoloShift 18s ease infinite;
+}
+
+body.bg-anim-nebula {
+  background:
+    radial-gradient(700px 500px at 20% 20%, oklch(0.68 0.2 300 / 0.35), transparent 60%),
+    radial-gradient(800px 600px at 80% 80%, oklch(0.68 0.18 215 / 0.3), transparent 60%),
+    var(--color-background);
+  background-size: 200% 200%, 220% 220%, 100% 100%;
+  animation: bgNebulaShift 26s ease-in-out infinite;
+}
+
+body.bg-anim-waves {
+  background:
+    linear-gradient(60deg, oklch(0.55 0.16 250 / 0.4), oklch(0.6 0.15 190 / 0.35), oklch(0.55 0.16 250 / 0.4)),
+    var(--color-background);
+  background-size: 200% 200%, 100% 100%;
+  animation: bgWavesShift 18s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.bg-anim-hologram, body.bg-anim-nebula, body.bg-anim-waves { animation: none; }
+}

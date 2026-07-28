@@ -3,7 +3,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { usePreferences, type Theme, type FontSize, type BackgroundId, BG_PRESETS } from "@/context/PreferencesContext";
+import { usePreferences, type Theme, type FontSize, type BackgroundId, BG_PRESETS, FONTS, ACCENTS, ANIM_BG_PREVIEW } from "@/context/PreferencesContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -160,7 +160,10 @@ function ProfilePage() {
 
 function PreferencesCard() {
   const { user } = useAuth();
-  const { theme, fontSize, background, backgroundUrl, setTheme, setFontSize, setBackground, setBackgroundUrl } = usePreferences();
+  const {
+    theme, fontSize, fontFamily, accent, background, backgroundUrl,
+    setTheme, setFontSize, setFontFamily, setAccent, setBackground, setBackgroundUrl,
+  } = usePreferences();
   const bgFileRef = useRef<HTMLInputElement>(null);
   const [bgUploading, setBgUploading] = useState(false);
 
@@ -173,12 +176,15 @@ function PreferencesCard() {
     { v: "md", label: "Vừa", sample: "16px" },
     { v: "lg", label: "Lớn", sample: "18px" },
   ];
-  const backgrounds: { v: BackgroundId; label: string }[] = [
-    { v: "default", label: "Mặc định" },
-    { v: "aurora", label: "Aurora" },
-    { v: "sunset", label: "Sunset" },
-    { v: "ocean", label: "Ocean" },
-    { v: "minimal", label: "Trơn" },
+  const backgrounds: { v: BackgroundId; label: string; preview: string }[] = [
+    { v: "default", label: "Mặc định", preview: BG_PRESETS.default },
+    { v: "aurora", label: "Aurora", preview: BG_PRESETS.aurora },
+    { v: "sunset", label: "Sunset", preview: BG_PRESETS.sunset },
+    { v: "ocean", label: "Ocean", preview: BG_PRESETS.ocean },
+    { v: "minimal", label: "Trơn", preview: BG_PRESETS.minimal },
+    { v: "hologram", label: "Hologram ✨", preview: ANIM_BG_PREVIEW.hologram },
+    { v: "nebula", label: "Nebula ⟳", preview: ANIM_BG_PREVIEW.nebula },
+    { v: "waves", label: "Sóng ⟳", preview: ANIM_BG_PREVIEW.waves },
   ];
 
   async function onPickBg(e: React.ChangeEvent<HTMLInputElement>) {
@@ -238,9 +244,44 @@ function PreferencesCard() {
         </div>
       </div>
       <div className="space-y-2">
+        <Label>Kiểu chữ (font)</Label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {Object.entries(FONTS).map(([k, f]) => (
+            <button
+              key={k}
+              onClick={() => setFontFamily(k)}
+              className={`rounded-md border px-3 py-2.5 text-left transition-colors ${
+                fontFamily === k ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground"
+              }`}
+              style={{ fontFamily: f.stack }}
+              title={f.label}
+            >
+              <div className="text-base leading-tight">Ag</div>
+              <div className="text-xs truncate">{f.label}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Màu giao diện</Label>
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(ACCENTS).map(([k, a]) => (
+            <button
+              key={k}
+              onClick={() => setAccent(k)}
+              title={a.label}
+              className={`size-8 rounded-full border transition-transform hover:scale-110 ${
+                accent === k ? "ring-2 ring-offset-2 ring-offset-background ring-primary" : "border-black/10"
+              }`}
+              style={{ background: a.swatch }}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="space-y-2">
         <Label>Hình nền</Label>
-        <div className="grid grid-cols-5 gap-2">
-          {backgrounds.map(({ v, label }) => (
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          {backgrounds.map(({ v, label, preview }) => (
             <button
               key={v}
               onClick={() => setBackground(v)}
@@ -249,8 +290,8 @@ function PreferencesCard() {
               }`}
               title={label}
             >
-              <div className="h-14 w-full" style={{ background: BG_PRESETS[v as Exclude<BackgroundId, "custom">] }} />
-              <div className="text-xs py-1 text-center">{label}</div>
+              <div className="h-14 w-full" style={{ background: preview }} />
+              <div className="text-xs py-1 text-center truncate px-1">{label}</div>
             </button>
           ))}
           <button
