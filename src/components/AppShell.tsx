@@ -2,7 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Calendar, Inbox, Sparkles, BarChart3, LogOut, Bell, Pin, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Home, Calendar, Inbox, Sparkles, BarChart3, LogOut, Bell, Pin, MessageSquare, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useReminders } from "@/hooks/useReminders";
@@ -14,6 +14,7 @@ const NAV = [
   { to: "/inbox", label: "AI Inbox", icon: Inbox },
   { to: "/notifications", label: "Thông báo", icon: Bell },
   { to: "/board", label: "Bảng ghim", icon: Pin },
+  { to: "/feedback", label: "Gửi feedback", icon: MessageSquare },
 ];
 
 type ViewMode = "day" | "3days" | "week" | "month";

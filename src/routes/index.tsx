@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/context/AuthContext";
 import { useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, BarChart3, Sparkles, Pin, Bell, User, ChevronRight } from "lucide-react";
+import { Calendar, BarChart3, Sparkles, Pin, Bell, User, MessageSquare, ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: () => (
@@ -43,6 +43,7 @@ const CARDS: CardDef[] = [
   { to: "/inbox", label: "AI Inbox", icon: Sparkles, tile: "bg-emerald-500/15", iconColor: "text-emerald-500" },
   { to: "/board", label: "Bảng ghim", icon: Pin, tile: "bg-amber-500/15", iconColor: "text-amber-500" },
   { to: "/notifications", label: "Thông báo", icon: Bell, tile: "bg-rose-500/15", iconColor: "text-rose-500" },
+  { to: "/feedback", label: "Gửi feedback", icon: MessageSquare, tile: "bg-indigo-500/15", iconColor: "text-indigo-500" },
   { to: "/profile", label: "Hồ sơ của tôi", icon: User, tile: "bg-teal-500/15", iconColor: "text-teal-500" },
 ];
 
