@@ -18,12 +18,14 @@ type Prefs = {
   fontSize: FontSize;
   fontFamily: string;
   accent: string;
+  glass: boolean;
   background: BackgroundId;
   backgroundUrl: string;
   setTheme: (t: Theme) => void;
   setFontSize: (f: FontSize) => void;
   setFontFamily: (f: string) => void;
   setAccent: (a: string) => void;
+  setGlass: (g: boolean) => void;
   setBackground: (b: BackgroundId) => void;
   setBackgroundUrl: (u: string) => void;
 };
@@ -34,6 +36,11 @@ const FS_MAP: Record<FontSize, string> = { sm: "14px", md: "16px", lg: "18px" };
 // Các font chữ có thể chọn (tải Google Fonts theo nhu cầu)
 export const FONTS: Record<string, { label: string; stack: string; href?: string }> = {
   inter: { label: "Inter (mặc định)", stack: `"Inter", ui-sans-serif, system-ui, sans-serif` },
+  roboto: {
+    label: "Roboto",
+    stack: `"Roboto", sans-serif`,
+    href: "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap",
+  },
   poppins: {
     label: "Poppins",
     stack: `"Poppins", sans-serif`,
@@ -113,6 +120,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [fontSize, setFontSizeState] = useState<FontSize>("md");
   const [fontFamily, setFontFamilyState] = useState<string>("inter");
   const [accent, setAccentState] = useState<string>("default");
+  const [glass, setGlassState] = useState<boolean>(false);
   const [background, setBackgroundState] = useState<BackgroundId>("default");
   const [backgroundUrl, setBackgroundUrlState] = useState<string>("");
 
@@ -121,9 +129,15 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     setFontSizeState((localStorage.getItem("pref:fontSize") as FontSize) || "md");
     setFontFamilyState(localStorage.getItem("pref:fontFamily") || "inter");
     setAccentState(localStorage.getItem("pref:accent") || "default");
+    setGlassState(localStorage.getItem("pref:glass") === "1");
     setBackgroundState((localStorage.getItem("pref:background") as BackgroundId) || "default");
     setBackgroundUrlState(localStorage.getItem("pref:backgroundUrl") || "");
   }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("theme-glass", glass);
+    localStorage.setItem("pref:glass", glass ? "1" : "0");
+  }, [glass]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -172,7 +186,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       body.style.background = "";
       body.classList.add(ANIM_BG[background]);
     } else if (background === "custom" && backgroundUrl) {
-      body.style.background = `linear-gradient(var(--color-background) / 0, var(--color-background) / 0), url("${backgroundUrl}") center/cover no-repeat fixed, var(--color-background)`;
+      body.style.background = `url("${backgroundUrl}") center center / cover no-repeat fixed, var(--color-background)`;
     } else {
       body.style.background = (BG_PRESETS as Record<string, string>)[background] ?? BG_PRESETS.default;
     }
@@ -185,12 +199,14 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         fontSize,
         fontFamily,
         accent,
+        glass,
         background,
         backgroundUrl,
         setTheme: setThemeState,
         setFontSize: setFontSizeState,
         setFontFamily: setFontFamilyState,
         setAccent: setAccentState,
+        setGlass: setGlassState,
         setBackground: setBackgroundState,
         setBackgroundUrl: setBackgroundUrlState,
       }}

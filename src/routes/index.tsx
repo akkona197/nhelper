@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/context/AuthContext";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar, BarChart3, Sparkles, Pin, Bell, User, ChevronRight } from "lucide-react";
 
@@ -60,12 +60,8 @@ function Home() {
   const initial = name.charAt(0).toUpperCase();
   const hello = useMemo(() => greeting(new Date().getHours()), []);
 
-  // Câu quote: bắt đầu ngẫu nhiên, tự đổi mỗi 9 giây
-  const [qi, setQi] = useState(() => Math.floor(Math.random() * QUOTES.length));
-  useEffect(() => {
-    const t = setInterval(() => setQi((i) => (i + 1) % QUOTES.length), 9000);
-    return () => clearInterval(t);
-  }, []);
+  // Câu quote: chọn ngẫu nhiên mỗi lần tải trang (F5 sẽ đổi câu)
+  const [qi] = useState(() => Math.floor(Math.random() * QUOTES.length));
   const quote = QUOTES[qi];
 
   return (

@@ -161,8 +161,8 @@ function ProfilePage() {
 function PreferencesCard() {
   const { user } = useAuth();
   const {
-    theme, fontSize, fontFamily, accent, background, backgroundUrl,
-    setTheme, setFontSize, setFontFamily, setAccent, setBackground, setBackgroundUrl,
+    theme, fontSize, fontFamily, accent, glass, background, backgroundUrl,
+    setTheme, setFontSize, setFontFamily, setAccent, setGlass, setBackground, setBackgroundUrl,
   } = usePreferences();
   const bgFileRef = useRef<HTMLInputElement>(null);
   const [bgUploading, setBgUploading] = useState(false);
@@ -277,6 +277,23 @@ function PreferencesCard() {
             />
           ))}
         </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Template</Label>
+        <button
+          onClick={() => setGlass(!glass)}
+          className={`w-full flex items-center justify-between rounded-md border px-4 py-3 text-sm transition-colors ${
+            glass ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <span className="flex flex-col items-start">
+            <span className="font-medium">Trong suốt (kính mờ)</span>
+            <span className="text-xs opacity-70">Panel mờ để nhìn xuyên thấy hình nền — đẹp nhất khi dùng cùng nền động/ảnh.</span>
+          </span>
+          <span className={`shrink-0 ml-3 inline-flex h-6 w-11 items-center rounded-full transition-colors ${glass ? "bg-primary" : "bg-muted-foreground/30"}`}>
+            <span className={`inline-block size-5 rounded-full bg-white transition-transform ${glass ? "translate-x-5" : "translate-x-0.5"}`} />
+          </span>
+        </button>
       </div>
       <div className="space-y-2">
         <Label>Hình nền</Label>
