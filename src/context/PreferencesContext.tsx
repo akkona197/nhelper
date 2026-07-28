@@ -21,6 +21,8 @@ type Prefs = {
   accent: string;
   textColor: string;
   glass: boolean;
+  mascotOn: boolean;
+  mascotSize: string;
   background: BackgroundId;
   backgroundUrl: string;
   setTheme: (t: Theme) => void;
@@ -29,8 +31,16 @@ type Prefs = {
   setAccent: (a: string) => void;
   setTextColor: (c: string) => void;
   setGlass: (g: boolean) => void;
+  setMascotOn: (v: boolean) => void;
+  setMascotSize: (s: string) => void;
   setBackground: (b: BackgroundId) => void;
   setBackgroundUrl: (u: string) => void;
+};
+
+export const MASCOT_SIZES: Record<string, { label: string; w: number }> = {
+  sm: { label: "Nhỏ", w: 88 },
+  md: { label: "Vừa", w: 116 },
+  lg: { label: "Lớn", w: 150 },
 };
 
 const Ctx = createContext<Prefs | null>(null);
@@ -138,6 +148,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [accent, setAccentState] = useState<string>("default");
   const [textColor, setTextColorState] = useState<string>("default");
   const [glass, setGlassState] = useState<boolean>(false);
+  const [mascotOn, setMascotOnState] = useState<boolean>(true);
+  const [mascotSize, setMascotSizeState] = useState<string>("md");
   const [background, setBackgroundState] = useState<BackgroundId>("default");
   const [backgroundUrl, setBackgroundUrlState] = useState<string>("");
 
@@ -148,6 +160,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     setAccentState(localStorage.getItem("pref:accent") || "default");
     setTextColorState(localStorage.getItem("pref:textColor") || "default");
     setGlassState(localStorage.getItem("pref:glass") === "1");
+    setMascotOnState(localStorage.getItem("pref:mascotOn") !== "0");
+    setMascotSizeState(localStorage.getItem("pref:mascotSize") || "md");
     setBackgroundState((localStorage.getItem("pref:background") as BackgroundId) || "default");
     setBackgroundUrlState(localStorage.getItem("pref:backgroundUrl") || "");
   }, []);
@@ -164,6 +178,13 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle("theme-glass", glass);
     localStorage.setItem("pref:glass", glass ? "1" : "0");
   }, [glass]);
+
+  useEffect(() => {
+    localStorage.setItem("pref:mascotOn", mascotOn ? "1" : "0");
+  }, [mascotOn]);
+  useEffect(() => {
+    localStorage.setItem("pref:mascotSize", mascotSize);
+  }, [mascotSize]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -227,6 +248,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         accent,
         textColor,
         glass,
+        mascotOn,
+        mascotSize,
         background,
         backgroundUrl,
         setTheme: setThemeState,
@@ -235,6 +258,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         setAccent: setAccentState,
         setTextColor: setTextColorState,
         setGlass: setGlassState,
+        setMascotOn: setMascotOnState,
+        setMascotSize: setMascotSizeState,
         setBackground: setBackgroundState,
         setBackgroundUrl: setBackgroundUrlState,
       }}

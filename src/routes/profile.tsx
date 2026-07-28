@@ -3,7 +3,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { usePreferences, type Theme, type FontSize, type BackgroundId, BG_PRESETS, FONTS, ACCENTS, TEXT_COLORS, ANIM_BG_PREVIEW } from "@/context/PreferencesContext";
+import { usePreferences, type Theme, type FontSize, type BackgroundId, BG_PRESETS, FONTS, ACCENTS, TEXT_COLORS, MASCOT_SIZES, ANIM_BG_PREVIEW } from "@/context/PreferencesContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -161,8 +161,8 @@ function ProfilePage() {
 function PreferencesCard() {
   const { user } = useAuth();
   const {
-    theme, fontSize, fontFamily, accent, textColor, glass, background, backgroundUrl,
-    setTheme, setFontSize, setFontFamily, setAccent, setTextColor, setGlass, setBackground, setBackgroundUrl,
+    theme, fontSize, fontFamily, accent, textColor, glass, mascotOn, mascotSize, background, backgroundUrl,
+    setTheme, setFontSize, setFontFamily, setAccent, setTextColor, setGlass, setMascotOn, setMascotSize, setBackground, setBackgroundUrl,
   } = usePreferences();
   const bgFileRef = useRef<HTMLInputElement>(null);
   const [bgUploading, setBgUploading] = useState(false);
@@ -313,6 +313,38 @@ function PreferencesCard() {
             <span className={`inline-block size-5 rounded-full bg-white transition-transform ${glass ? "translate-x-5" : "translate-x-0.5"}`} />
           </span>
         </button>
+      </div>
+      <div className="space-y-2">
+        <Label>Linh vật Bé Lúa 🌾</Label>
+        <button
+          onClick={() => setMascotOn(!mascotOn)}
+          className={`w-full flex items-center justify-between rounded-md border px-4 py-3 text-sm transition-colors ${
+            mascotOn ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <span className="flex flex-col items-start">
+            <span className="font-medium">Hiện Bé Lúa</span>
+            <span className="text-xs opacity-70">Bạn túi lúa nhắc uống nước, vươn vai... và cổ vũ khi bạn xong việc.</span>
+          </span>
+          <span className={`shrink-0 ml-3 inline-flex h-6 w-11 items-center rounded-full transition-colors ${mascotOn ? "bg-primary" : "bg-muted-foreground/30"}`}>
+            <span className={`inline-block size-5 rounded-full bg-white transition-transform ${mascotOn ? "translate-x-5" : "translate-x-0.5"}`} />
+          </span>
+        </button>
+        {mascotOn && (
+          <div className="flex gap-2 pt-1">
+            {Object.entries(MASCOT_SIZES).map(([k, s]) => (
+              <button
+                key={k}
+                onClick={() => setMascotSize(k)}
+                className={`flex-1 rounded-md border px-3 py-2 text-sm transition-colors ${
+                  mascotSize === k ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <div className="space-y-2">
         <Label>Hình nền</Label>

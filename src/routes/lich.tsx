@@ -368,6 +368,10 @@ function WeekView() {
   async function toggleDone(task: TaskRow, date: Date, current?: InstanceRow) {
     if (!user) return;
     const dStr = fmtDate(date);
+    const becomingDone = !current || !current.is_done;
+    if (becomingDone && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("mt:taskdone"));
+    }
     if (current) {
       await supabase
         .from("task_instances")

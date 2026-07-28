@@ -241,10 +241,14 @@ body.bg-anim-holopastel {
   body.bg-anim-hologram, body.bg-anim-holopastel, body.bg-anim-nebula, body.bg-anim-waves { animation: none; }
 }
 
-/* Linh vật túi lúa mì */
+/* Linh vật Bé Lúa */
 @keyframes mascotFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 .mascot-float { animation: mascotFloat 4s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .mascot-float { animation: none; } }
+@keyframes mascotJump { 0% { transform: translateY(0); } 30% { transform: translateY(-20px) scale(1.04); } 55% { transform: translateY(0); } 72% { transform: translateY(-9px); } 100% { transform: translateY(0); } }
+.mascot-jump { animation: mascotJump 0.7s ease; }
+@keyframes mascotWiggle { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-7deg); } 75% { transform: rotate(7deg); } }
+.mascot-wiggle { animation: mascotWiggle 0.8s ease; }
+@media (prefers-reduced-motion: reduce) { .mascot-float, .mascot-jump, .mascot-wiggle { animation: none; } }
 
 /* ===== Template trong suốt (kính mờ / glassmorphism) ===== */
 .theme-glass .surface {
