@@ -80,7 +80,7 @@ export function Mascot() {
           const ex = r.left + r.width * fx;
           const ey = r.top + r.height * fy;
           const ang = Math.atan2(e.clientY - ey, e.clientX - ex);
-          const dist = Math.min(15, Math.hypot(e.clientX - ex, e.clientY - ey) / 9);
+          const dist = Math.min(20, Math.hypot(e.clientX - ex, e.clientY - ey) / 8);
           g.setAttribute("transform", `translate(${Math.cos(ang) * dist} ${Math.sin(ang) * dist})`);
         };
         move(0.449, 0.684, leftPupil.current);
@@ -200,15 +200,15 @@ export function Mascot() {
         />
         {/* Đôi mắt động vẽ đè lên ảnh */}
         <svg viewBox="0 0 1024 1024" className="absolute inset-0 pointer-events-none" width={W} height={W}>
-          <ellipse cx="460" cy="700" rx="30" ry="36" fill="#fdf6ec" stroke="#4a3320" strokeWidth="5" />
-          <ellipse cx="640" cy="700" rx="30" ry="36" fill="#fdf6ec" stroke="#4a3320" strokeWidth="5" />
+          <ellipse cx="458" cy="698" rx="44" ry="52" fill="#fdf6ec" stroke="#4a3320" strokeWidth="6" />
+          <ellipse cx="642" cy="698" rx="44" ry="52" fill="#fdf6ec" stroke="#4a3320" strokeWidth="6" />
           <g ref={leftPupil}>
-            <circle cx="460" cy="704" r="15" fill="#2a1c10" />
-            <circle cx="465" cy="698" r="5" fill="#fff" />
+            <circle cx="458" cy="704" r="23" fill="#2a1c10" />
+            <circle cx="466" cy="695" r="8" fill="#fff" />
           </g>
           <g ref={rightPupil}>
-            <circle cx="640" cy="704" r="15" fill="#2a1c10" />
-            <circle cx="645" cy="698" r="5" fill="#fff" />
+            <circle cx="642" cy="704" r="23" fill="#2a1c10" />
+            <circle cx="650" cy="695" r="8" fill="#fff" />
           </g>
         </svg>
       </div>
