@@ -177,7 +177,7 @@ export function Mascot() {
     >
       {bubble && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[220px] animate-in fade-in slide-in-from-bottom-1 duration-300">
-          <div className="relative rounded-2xl bg-card border shadow-lg px-3 py-2 text-xs text-center text-foreground">
+          <div className="relative rounded-2xl bg-card border shadow-lg px-3.5 py-2 text-sm font-medium leading-snug text-center text-foreground">
             {bubble}
             <span className="absolute left-1/2 -translate-x-1/2 top-full -mt-px size-2 rotate-45 bg-card border-b border-r" />
           </div>
