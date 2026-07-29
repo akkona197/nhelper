@@ -1,19 +1,21 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import beLuaImg from "@/assets/belua.png";
 
 const DONE_KEY = "mt.tour.done";
 
 type Step = { sel: string; title: string; body: string };
 
+// Lời dẫn theo giọng Bé Lúa (người hướng dẫn)
 const STEPS: Step[] = [
-  { sel: '[data-tour="nav-/"]', title: "Trang chủ", body: "Lời chào, câu động lực và lối tắt tới mọi mục đều ở đây." },
-  { sel: '[data-tour="nav-/lich"]', title: "Tuần / Lịch", body: "Xem và kéo-thả công việc theo Ngày, 3 ngày hoặc Tuần. Tick ô tròn để đánh dấu hoàn thành." },
-  { sel: '[data-tour="nav-/workload"]', title: "Workload", body: "Theo dõi khối lượng công việc để cân bằng thời gian trong tuần." },
-  { sel: '[data-tour="nav-/inbox"]', title: "AI Inbox", body: "Dán tin nhắn vào đây, AI sẽ tự bóc tách thành công việc cho bạn." },
-  { sel: '[data-tour="nav-/board"]', title: "Bảng ghim", body: "Ghim thông báo quan trọng, dán ảnh bằng Ctrl+V, đổi màu bảng tuỳ thích." },
-  { sel: '[data-tour="nav-/feedback"]', title: "Gửi feedback", body: "Báo lỗi hoặc góp ý — mỗi phản hồi sẽ tự chuyển thành việc để đội ngũ xử lý dần." },
-  { sel: '[data-tour="nav-/notifications"]', title: "Thông báo", body: "Các nhắc nhở và cập nhật quan trọng sẽ xuất hiện ở đây." },
-  { sel: '[data-tour="profile"]', title: "Hồ sơ & cá nhân hoá", body: "Đổi giao diện sáng/tối, font chữ, màu, nền động, và cả linh vật Bé Lúa." },
-  { sel: '[data-tour="mascot"]', title: "Bé Lúa 🌾", body: "Mình nhắc uống nước, vươn vai và cổ vũ khi bạn xong việc. Bấm vào mình bất cứ lúc nào nhé!" },
+  { sel: '[data-tour="nav-/"]', title: "Trang chủ", body: "Đây là Trang chủ — nơi mình chào bạn, có câu động lực và lối tắt tới mọi mục nha! 🏠" },
+  { sel: '[data-tour="nav-/lich"]', title: "Tuần / Lịch", body: "Vào đây để xem và kéo-thả công việc theo Ngày / 3 ngày / Tuần. Tick ô tròn là mình nhảy ăn mừng đó! 🗓️" },
+  { sel: '[data-tour="nav-/workload"]', title: "Workload", body: "Chỗ này giúp bạn xem khối lượng công việc để cân bằng thời gian trong tuần. 📊" },
+  { sel: '[data-tour="nav-/inbox"]', title: "AI Inbox", body: "Bạn dán tin nhắn vào đây, AI sẽ tự bóc tách thành công việc giúp bạn. 🤖" },
+  { sel: '[data-tour="nav-/board"]', title: "Bảng ghim", body: "Ghim thông báo quan trọng, dán ảnh bằng Ctrl+V, đổi màu bảng tuỳ thích. 📌" },
+  { sel: '[data-tour="nav-/feedback"]', title: "Gửi feedback", body: "Có lỗi hay ý tưởng gì, gửi ở đây nhé — sẽ tự thành việc để đội ngũ xử lý dần. 💬" },
+  { sel: '[data-tour="nav-/notifications"]', title: "Thông báo", body: "Các nhắc nhở và cập nhật quan trọng của bạn nằm ở đây. 🔔" },
+  { sel: '[data-tour="profile"]', title: "Hồ sơ & cá nhân hoá", body: "Vào Hồ sơ để đổi giao diện, font chữ, màu, nền động... và cả mình nữa! 🎨" },
+  { sel: '[data-tour="mascot"]', title: "Bé Lúa 🌾", body: "Còn đây là mình! Mình nhắc uống nước, vươn vai và cổ vũ khi bạn xong việc. Bấm vào mình bất cứ lúc nào nha! 💛" },
 ];
 
 function firstExistingFrom(start: number, dir: 1 | -1): number | null {
@@ -41,27 +43,14 @@ export function Tour() {
     setIdx(next);
   }
 
-  // Tự chạy cho người mới + nghe sự kiện xem lại
+  // Bắt đầu tour khi có sự kiện (từ popup chào mừng hoặc nút xem lại trong Hồ sơ)
   useEffect(() => {
-    let t: number | undefined;
-    const start = () => {
+    const onStart = () => {
       const first = firstExistingFrom(0, 1);
       if (first !== null) setIdx(first);
     };
-    const done = (() => {
-      try {
-        return localStorage.getItem(DONE_KEY) === "1";
-      } catch {
-        return true;
-      }
-    })();
-    if (!done) t = window.setTimeout(start, 1400);
-    const onStart = () => start();
     window.addEventListener("mt:tour-start", onStart);
-    return () => {
-      window.clearTimeout(t);
-      window.removeEventListener("mt:tour-start", onStart);
-    };
+    return () => window.removeEventListener("mt:tour-start", onStart);
   }, []);
 
   // Đo vị trí phần tử mục tiêu
@@ -148,7 +137,10 @@ export function Tour() {
         className="absolute w-[288px] max-w-[86vw] pointer-events-auto rounded-xl border bg-card text-card-foreground shadow-2xl p-4 animate-in fade-in zoom-in-95 duration-200"
         style={{ left: tip.left, top: tip.top }}
       >
-        <div className="text-sm font-semibold mb-1">{step.title}</div>
+        <div className="flex items-center gap-2 mb-1.5">
+          <img src={beLuaImg} alt="Bé Lúa" draggable={false} className="size-8 shrink-0 pointer-events-none" />
+          <div className="text-sm font-semibold">{step.title}</div>
+        </div>
         <div className="text-sm text-muted-foreground leading-snug">{step.body}</div>
         <div className="mt-3 flex items-center justify-between gap-2">
           <button onClick={finish} className="text-xs text-muted-foreground hover:text-foreground">

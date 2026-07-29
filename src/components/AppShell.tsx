@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useReminders } from "@/hooks/useReminders";
 import { Mascot } from "@/components/Mascot";
 import { Tour } from "@/components/Tour";
+import { Welcome } from "@/components/Welcome";
 
 const NAV = [
   { to: "/", label: "Trang chủ", icon: Home },
@@ -165,6 +166,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="flex-1 min-w-0">{children}</main>
       <Mascot />
       <Tour />
+      <Welcome />
     </div>
   );
 }
