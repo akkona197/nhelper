@@ -1,0 +1,54 @@
+name: Backup Supabase data
+
+on:
+  schedule:
+    # 00:00 giờ Việt Nam (Asia/Bangkok, UTC+7) = 17:00 UTC hôm trước
+    - cron: "0 17 * * *"
+  workflow_dispatch: {} # cho phép bấm chạy tay trong tab Actions
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Export all tables to JSON
+        env:
+          SUPABASE_URL: "https://umqxjpwkjzsnvbtjlmur.supabase.co"
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SERVICE_KEY}" ]; then
+            echo "::error::Chưa cấu hình secret SUPABASE_SERVICE_ROLE_KEY. Vào Settings → Secrets and variables → Actions để thêm."
+            exit 1
+          fi
+          TABLES="profiles projects labels tasks task_instances task_labels task_notes board_notes notifications feedback"
+          mkdir -p backups
+          DATE="$(date -u +%Y-%m-%d)"
+          OUT="backups/backup-${DATE}.json"
+          echo "{" > "$OUT"
+          echo "  \"exported_at\": \"$(date -u +%FT%TZ)\"," >> "$OUT"
+          echo "  \"project\": \"nhelper / Master Task\"," >> "$OUT"
+          echo "  \"tables\": {" >> "$OUT"
+          first=1
+          for t in $TABLES; do
+            echo "Fetching $t ..."
+            data="$(curl -fsS "${SUPABASE_URL}/rest/v1/${t}?select=*" \
+              -H "apikey: ${SERVICE_KEY}" \
+              -H "Authorization: Bearer ${SERVICE_KEY}")"
+            if [ "$first" -eq 0 ]; then echo "," >> "$OUT"; fi
+            first=0
+            printf '    "%s": %s' "$t" "$data" >> "$OUT"
+          done
+          echo "" >> "$OUT"
+          echo "  }" >> "$OUT"
+          echo "}" >> "$OUT"
+          # Chuẩn hoá + kiểm tra JSON hợp lệ
+          jq . "$OUT" > "${OUT}.tmp" && mv "${OUT}.tmp" "$OUT"
+          echo "SIZE=$(wc -c < "$OUT") bytes"
+          echo "ARTIFACT_DATE=${DATE}" >> "$GITHUB_ENV"
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: master-task-backup-${{ env.ARTIFACT_DATE }}
+          path: backups/*.json
+          retention-days: 90
