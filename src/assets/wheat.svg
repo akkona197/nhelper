@@ -1,12 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <path d="M16 31V14.5" stroke="#8a5a12" stroke-width="1.8" stroke-linecap="round"/>
-  <g fill="#f2b52a" stroke="#8a5a12" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M16 3c-2.4 2.6-2.4 6 0 8.6 2.4-2.6 2.4-6 0-8.6Z"/>
-    <path d="M16 8.5c-3.8.6-6 3.4-6 6.6 3.8-.6 6-3.4 6-6.6Z"/>
-    <path d="M16 8.5c3.8.6 6 3.4 6 6.6-3.8-.6-6-3.4-6-6.6Z"/>
-    <path d="M16 14c-3.8.6-6 3.4-6 6.6 3.8-.6 6-3.4 6-6.6Z"/>
-    <path d="M16 14c3.8.6 6 3.4 6 6.6-3.8-.6-6-3.4-6-6.6Z"/>
-    <path d="M16 19.5c-3.8.6-6 3.4-6 6.6 3.8-.6 6-3.4 6-6.6Z"/>
-    <path d="M16 19.5c3.8.6 6 3.4 6 6.6-3.8-.6-6-3.4-6-6.6Z"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text x="32" y="34" font-size="52" text-anchor="middle" dominant-baseline="central">🌾</text></svg>

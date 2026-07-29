@@ -5,7 +5,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar, BarChart3, Sparkles, Pin, Bell, User, MessageSquare, ChevronRight } from "lucide-react";
-import wheatIcon from "@/assets/wheat.svg?url";
 
 export const Route = createFileRoute("/")({
   component: () => (
@@ -78,7 +77,7 @@ function Home() {
           <div>
             <div className="text-muted-foreground text-sm sm:text-base">{hello}</div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
-              {name} ơi! <img src={wheatIcon} alt="" className="size-7 inline-block" />
+              {name} ơi! <span className="text-2xl">🌾</span>
             </h1>
           </div>
         </div>
