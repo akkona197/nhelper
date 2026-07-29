@@ -51,7 +51,7 @@ function AuthPage() {
           <div className="size-8 rounded-lg grad-primary flex items-center justify-center">
             <Sparkles className="size-4 text-primary-foreground" />
           </div>
-          <span className="font-semibold tracking-tight text-lg">Tempo</span>
+          <span className="font-semibold tracking-tight text-lg">Master Task</span>
         </div>
         <h1 className="mt-4 text-2xl font-semibold tracking-tight">Chào mừng quay lại</h1>
         <p className="text-sm text-muted-foreground mb-6">Đăng nhập để xem lịch tuần của bạn.</p>

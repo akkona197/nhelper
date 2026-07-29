@@ -346,7 +346,7 @@ function PreferencesCard() {
               ))}
             </div>
             <button
-              onClick={() => window.dispatchEvent(new CustomEvent("mt:mascot-tour"))}
+              onClick={() => window.dispatchEvent(new CustomEvent("mt:tour-start"))}
               className="w-full rounded-md border border-border px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               ▶ Xem lại hướng dẫn cho người mới

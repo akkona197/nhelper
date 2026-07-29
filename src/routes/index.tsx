@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/context/AuthContext";
 import { useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, BarChart3, Sparkles, Pin, Bell, User, MessageSquare, ChevronRight } from "lucide-react";
+import { Calendar, BarChart3, Sparkles, Pin, Bell, User, MessageSquare, ChevronRight, X } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: () => (
@@ -65,9 +65,39 @@ function Home() {
   const [qi] = useState(() => Math.floor(Math.random() * QUOTES.length));
   const quote = QUOTES[qi];
 
+  const [showEA, setShowEA] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("mt.earlyaccess.dismissed") !== "1";
+  });
+  function dismissEA() {
+    setShowEA(false);
+    try {
+      localStorage.setItem("mt.earlyaccess.dismissed", "1");
+    } catch {}
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center px-6 py-14">
       <div className="w-full max-w-4xl">
+        {/* Thông báo người dùng đầu tiên */}
+        {showEA && (
+          <div className="mb-6 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 flex items-start gap-3">
+            <Sparkles className="size-5 text-primary shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0 text-sm">
+              <div className="font-semibold">Bạn là một trong những người đầu tiên trải nghiệm Master Task! 🎉</div>
+              <div className="text-muted-foreground mt-0.5">
+                Sản phẩm đang trong giai đoạn hoàn thiện nên mọi góp ý của bạn đều cực kỳ quý giá. Thấy gì chưa mượt hay có ý tưởng hay ho, cho tụi mình biết nhé!
+              </div>
+              <Link to="/feedback" className="inline-flex items-center gap-1.5 mt-2 text-primary font-medium hover:underline">
+                <MessageSquare className="size-4" /> Gửi feedback ngay
+              </Link>
+            </div>
+            <button onClick={dismissEA} className="text-muted-foreground hover:text-foreground shrink-0" title="Ẩn">
+              <X className="size-4" />
+            </button>
+          </div>
+        )}
+
         {/* Lời chào */}
         <div className="flex items-center gap-4 mb-6">
           <Avatar className="size-14 ring-2 ring-primary/30">

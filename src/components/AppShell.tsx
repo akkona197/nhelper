@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useReminders } from "@/hooks/useReminders";
 import { Mascot } from "@/components/Mascot";
+import { Tour } from "@/components/Tour";
 
 const NAV = [
   { to: "/", label: "Trang chủ", icon: Home },
@@ -123,6 +124,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={n.to}
                 to={n.to}
+                data-tour={`nav-${n.to}`}
                 title={collapsed ? n.label : undefined}
                 className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} gap-2 rounded-md ${collapsed ? "px-2" : "px-3"} py-2 text-sm transition-colors ${
                   active
@@ -144,7 +146,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className={`p-3 border-t flex items-center gap-2 ${collapsed ? "flex-col" : ""}`}>
+        <div data-tour="profile" className={`p-3 border-t flex items-center gap-2 ${collapsed ? "flex-col" : ""}`}>
           <Avatar className="size-8">
             {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
             <AvatarFallback className="bg-primary/20 text-primary text-xs">{initial}</AvatarFallback>
@@ -162,6 +164,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
       <main className="flex-1 min-w-0">{children}</main>
       <Mascot />
+      <Tour />
     </div>
   );
 }
