@@ -4,6 +4,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { PreferencesProvider } from "@/context/PreferencesContext";
 
 import appCss from "../styles.css?url";
+import wheatIcon from "@/assets/wheat.svg?url";
 
 function NotFoundComponent() {
   return (
@@ -34,6 +35,7 @@ export const Route = createRootRoute({
       { property: "og:type", content: "website" },
     ],
     links: [
+      { rel: "icon", type: "image/svg+xml", href: wheatIcon },
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "" },
