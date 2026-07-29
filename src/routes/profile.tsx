@@ -331,19 +331,27 @@ function PreferencesCard() {
           </span>
         </button>
         {mascotOn && (
-          <div className="flex gap-2 pt-1">
-            {Object.entries(MASCOT_SIZES).map(([k, s]) => (
-              <button
-                key={k}
-                onClick={() => setMascotSize(k)}
-                className={`flex-1 rounded-md border px-3 py-2 text-sm transition-colors ${
-                  mascotSize === k ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
+          <>
+            <div className="flex gap-2 pt-1">
+              {Object.entries(MASCOT_SIZES).map(([k, s]) => (
+                <button
+                  key={k}
+                  onClick={() => setMascotSize(k)}
+                  className={`flex-1 rounded-md border px-3 py-2 text-sm transition-colors ${
+                    mascotSize === k ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("mt:mascot-tour"))}
+              className="w-full rounded-md border border-border px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ▶ Xem lại hướng dẫn cho người mới
+            </button>
+          </>
         )}
       </div>
       <div className="space-y-2">

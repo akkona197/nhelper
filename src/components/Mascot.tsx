@@ -30,6 +30,19 @@ const ENCOURAGE = [
 const CLICK_MSGS = [...REMINDERS, ...ENCOURAGE];
 const CHEERS = ["Tuyệt vời! Xong một việc rồi 🎉", "Giỏi quá đi! ✨", "Yeah! Tick thêm một ô 💪", "Làm tốt lắm! 👏"];
 
+// Hướng dẫn cho người mới (Bé Lúa dẫn đi một vòng)
+const TOUR = [
+  "Chào bạn mới! Mình là Bé Lúa 🌾 Để mình dẫn bạn đi một vòng nhé!",
+  "Trang chủ có lời chào, câu động lực và lối tắt tới mọi mục ✨",
+  "Tab Tuần: xem và kéo-thả công việc theo Ngày / 3 ngày / Tuần 🗓️",
+  "Tick vào ô tròn để đánh dấu hoàn thành — mình sẽ nhảy ăn mừng! 🎉",
+  "Bảng ghim: ghim thông báo, dán ảnh bằng Ctrl+V, đổi màu bảng 📌",
+  "Gửi feedback: báo lỗi / góp ý, sẽ tự chuyển thành việc để xử lý dần 💬",
+  "Hồ sơ: đổi giao diện, font chữ, màu, nền động... và cả mình nữa 🎨",
+  "Mẹo nhỏ: bấm vào mình bất cứ lúc nào để nghe lời nhắc & động viên nha! 💛",
+];
+const ONBOARD_KEY = "mt.mascot.onboarded";
+
 function pick(arr: string[]) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -53,11 +66,33 @@ export function Mascot() {
   });
   const [bubble, setBubble] = useState<string | null>(null);
   const [anim, setAnim] = useState("");
+  const [tourStep, setTourStep] = useState<number | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const leftPupil = useRef<SVGGElement>(null);
   const rightPupil = useRef<SVGGElement>(null);
   const dragging = useRef(false);
   const bubbleTimer = useRef<number | undefined>(undefined);
+  const tourActive = useRef(false);
+  tourActive.current = tourStep !== null;
+
+  function endTour() {
+    setTourStep(null);
+    try {
+      localStorage.setItem(ONBOARD_KEY, "1");
+    } catch {}
+  }
+  function nextStep() {
+    setTourStep((s) => {
+      if (s === null) return null;
+      if (s >= TOUR.length - 1) {
+        try {
+          localStorage.setItem(ONBOARD_KEY, "1");
+        } catch {}
+        return null;
+      }
+      return s + 1;
+    });
+  }
 
   function say(text: string, ms = 8000) {
     setBubble(text);
@@ -94,12 +129,22 @@ export function Mascot() {
     };
   }, []);
 
-  // Nhắc nhở mỗi ~1 phút + lời chào ban đầu
+  // Người mới -> hiện hướng dẫn; người cũ -> lời chào. Nhắc nhở mỗi ~1 phút.
   useEffect(() => {
     if (!mascotOn) return;
-    const hi = window.setTimeout(() => say("Chào bạn, mình là Bé Lúa! Cùng làm việc nhé 🌾", 7000), 4000);
+    const onboarded = (() => {
+      try {
+        return localStorage.getItem(ONBOARD_KEY) === "1";
+      } catch {
+        return true;
+      }
+    })();
+    const hi = window.setTimeout(() => {
+      if (!onboarded) setTourStep(0);
+      else say("Chào bạn, mình là Bé Lúa! Cùng làm việc nhé 🌾", 7000);
+    }, onboarded ? 4000 : 1300);
     const iv = window.setInterval(() => {
-      if (dragging.current) return;
+      if (dragging.current || tourActive.current) return;
       say(pick(REMINDERS));
     }, 60000);
     return () => {
@@ -108,6 +153,16 @@ export function Mascot() {
       window.clearTimeout(bubbleTimer.current);
     };
   }, [mascotOn]);
+
+  // Xem lại hướng dẫn (từ Hồ sơ)
+  useEffect(() => {
+    const onReplay = () => {
+      setBubble(null);
+      setTourStep(0);
+    };
+    window.addEventListener("mt:mascot-tour", onReplay);
+    return () => window.removeEventListener("mt:mascot-tour", onReplay);
+  }, []);
 
   // Nhảy ăn mừng khi hoàn thành task
   useEffect(() => {
@@ -175,13 +230,36 @@ export function Mascot() {
       className="fixed z-40 select-none touch-none"
       style={{ left: pos.x, top: pos.y, width: W }}
     >
-      {bubble && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[220px] animate-in fade-in slide-in-from-bottom-1 duration-300">
-          <div className="relative rounded-2xl bg-card border shadow-lg px-3.5 py-2 text-sm font-medium leading-snug text-center text-foreground">
-            {bubble}
+      {tourStep !== null ? (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[248px] animate-in fade-in slide-in-from-bottom-1 duration-300">
+          <div className="relative rounded-2xl bg-card border shadow-xl px-3.5 py-3 text-sm leading-snug text-foreground">
+            <div className="font-medium">{TOUR[tourStep]}</div>
+            <div className="mt-2.5 flex items-center justify-between">
+              <button onClick={endTour} className="text-xs text-muted-foreground hover:text-foreground">
+                Bỏ qua
+              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground">{tourStep + 1}/{TOUR.length}</span>
+                <button
+                  onClick={nextStep}
+                  className="text-xs font-semibold rounded-md bg-primary text-primary-foreground px-2.5 py-1 hover:opacity-90"
+                >
+                  {tourStep === TOUR.length - 1 ? "Xong" : "Tiếp"}
+                </button>
+              </div>
+            </div>
             <span className="absolute left-1/2 -translate-x-1/2 top-full -mt-px size-2 rotate-45 bg-card border-b border-r" />
           </div>
         </div>
+      ) : (
+        bubble && (
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[220px] animate-in fade-in slide-in-from-bottom-1 duration-300">
+            <div className="relative rounded-2xl bg-card border shadow-lg px-3.5 py-2 text-sm font-medium leading-snug text-center text-foreground">
+              {bubble}
+              <span className="absolute left-1/2 -translate-x-1/2 top-full -mt-px size-2 rotate-45 bg-card border-b border-r" />
+            </div>
+          </div>
+        )
       )}
 
       <div
