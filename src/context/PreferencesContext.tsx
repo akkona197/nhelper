@@ -12,6 +12,7 @@ export type BackgroundId =
   | "holopastel"
   | "nebula"
   | "waves"
+  | "vietnam"
   | "custom";
 
 type Prefs = {
@@ -20,6 +21,7 @@ type Prefs = {
   fontFamily: string;
   accent: string;
   textColor: string;
+  themePack: string;
   glass: boolean;
   mascotOn: boolean;
   mascotSize: string;
@@ -30,6 +32,7 @@ type Prefs = {
   setFontFamily: (f: string) => void;
   setAccent: (a: string) => void;
   setTextColor: (c: string) => void;
+  setThemePack: (t: string) => void;
   setGlass: (g: boolean) => void;
   setMascotOn: (v: boolean) => void;
   setMascotSize: (s: string) => void;
@@ -121,6 +124,7 @@ export const ANIM_BG: Record<string, string> = {
   holopastel: "bg-anim-holopastel",
   nebula: "bg-anim-nebula",
   waves: "bg-anim-waves",
+  vietnam: "bg-theme-vietnam",
 };
 // Ảnh xem trước (tĩnh) cho các nền động trong ô chọn
 export const ANIM_BG_PREVIEW: Record<string, string> = {
@@ -128,6 +132,13 @@ export const ANIM_BG_PREVIEW: Record<string, string> = {
   holopastel: "linear-gradient(115deg,#ffd1dc,#c8f7e0,#d5c9ff,#ffe6c7,#c7e9ff,#ffd1f0)",
   nebula: "radial-gradient(circle at 25% 25%, #a855f7aa, transparent 60%), radial-gradient(circle at 80% 80%, #38bdf8aa, transparent 60%), #0f172a",
   waves: "linear-gradient(60deg,#3b82f6,#22d3ee,#3b82f6)",
+  vietnam: "radial-gradient(circle at 50% 45%, #ffd21e, transparent 55%), linear-gradient(160deg,#da251d,#8f1a13)",
+};
+
+// Chủ đề (theme pack): chọn 1 chủ đề sẽ áp màu nhấn + nền + hoạ tiết cho toàn app
+export const THEMES: Record<string, { label: string; accent: string; background: BackgroundId; badge?: string }> = {
+  none: { label: "Mặc định", accent: "default", background: "default" },
+  vietnam: { label: "Việt Nam 🇻🇳", accent: "red", background: "vietnam", badge: "🇻🇳" },
 };
 
 function ensureFontLink(id: string, href: string) {
@@ -147,6 +158,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [fontFamily, setFontFamilyState] = useState<string>("inter");
   const [accent, setAccentState] = useState<string>("default");
   const [textColor, setTextColorState] = useState<string>("default");
+  const [themePack, setThemePackState] = useState<string>("none");
   const [glass, setGlassState] = useState<boolean>(false);
   const [mascotOn, setMascotOnState] = useState<boolean>(true);
   const [mascotSize, setMascotSizeState] = useState<string>("md");
@@ -159,6 +171,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     setFontFamilyState(localStorage.getItem("pref:fontFamily") || "inter");
     setAccentState(localStorage.getItem("pref:accent") || "default");
     setTextColorState(localStorage.getItem("pref:textColor") || "default");
+    setThemePackState(localStorage.getItem("pref:themePack") || "none");
     setGlassState(localStorage.getItem("pref:glass") === "1");
     setMascotOnState(localStorage.getItem("pref:mascotOn") !== "0");
     setMascotSizeState(localStorage.getItem("pref:mascotSize") || "md");
@@ -173,6 +186,13 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     else root.style.setProperty("--foreground", c.value);
     localStorage.setItem("pref:textColor", textColor);
   }, [textColor]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (themePack && themePack !== "none") root.setAttribute("data-theme-pack", themePack);
+    else root.removeAttribute("data-theme-pack");
+    localStorage.setItem("pref:themePack", themePack);
+  }, [themePack]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("theme-glass", glass);
@@ -247,6 +267,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         fontFamily,
         accent,
         textColor,
+        themePack,
         glass,
         mascotOn,
         mascotSize,
@@ -257,6 +278,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         setFontFamily: setFontFamilyState,
         setAccent: setAccentState,
         setTextColor: setTextColorState,
+        setThemePack: setThemePackState,
         setGlass: setGlassState,
         setMascotOn: setMascotOnState,
         setMascotSize: setMascotSizeState,

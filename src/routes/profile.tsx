@@ -3,7 +3,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { usePreferences, type Theme, type FontSize, type BackgroundId, BG_PRESETS, FONTS, ACCENTS, TEXT_COLORS, MASCOT_SIZES, ANIM_BG_PREVIEW } from "@/context/PreferencesContext";
+import { usePreferences, type Theme, type FontSize, type BackgroundId, BG_PRESETS, FONTS, ACCENTS, TEXT_COLORS, MASCOT_SIZES, THEMES, ANIM_BG_PREVIEW } from "@/context/PreferencesContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -161,9 +161,17 @@ function ProfilePage() {
 function PreferencesCard() {
   const { user } = useAuth();
   const {
-    theme, fontSize, fontFamily, accent, textColor, glass, mascotOn, mascotSize, background, backgroundUrl,
-    setTheme, setFontSize, setFontFamily, setAccent, setTextColor, setGlass, setMascotOn, setMascotSize, setBackground, setBackgroundUrl,
+    theme, fontSize, fontFamily, accent, textColor, themePack, glass, mascotOn, mascotSize, background, backgroundUrl,
+    setTheme, setFontSize, setFontFamily, setAccent, setTextColor, setThemePack, setGlass, setMascotOn, setMascotSize, setBackground, setBackgroundUrl,
   } = usePreferences();
+
+  function applyTheme(key: string) {
+    const t = THEMES[key];
+    if (!t) return;
+    setThemePack(key);
+    setAccent(t.accent);
+    setBackground(t.background);
+  }
   const bgFileRef = useRef<HTMLInputElement>(null);
   const [bgUploading, setBgUploading] = useState(false);
 
@@ -186,6 +194,7 @@ function PreferencesCard() {
     { v: "holopastel", label: "Hologram Pastel ✨", preview: ANIM_BG_PREVIEW.holopastel },
     { v: "nebula", label: "Nebula ⟳", preview: ANIM_BG_PREVIEW.nebula },
     { v: "waves", label: "Sóng ⟳", preview: ANIM_BG_PREVIEW.waves },
+    { v: "vietnam", label: "Việt Nam 🇻🇳", preview: ANIM_BG_PREVIEW.vietnam },
   ];
 
   async function onPickBg(e: React.ChangeEvent<HTMLInputElement>) {
@@ -210,6 +219,23 @@ function PreferencesCard() {
   return (
     <div className="surface rounded-xl border p-6 space-y-5 mt-6">
       <h2 className="text-lg font-semibold">Cá nhân hóa</h2>
+      <div className="space-y-2">
+        <Label>Chủ đề</Label>
+        <div className="grid grid-cols-2 gap-2">
+          {Object.entries(THEMES).map(([k, t]) => (
+            <button
+              key={k}
+              onClick={() => applyTheme(k)}
+              className={`rounded-md border px-4 py-3 text-sm font-medium transition-colors ${
+                themePack === k ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">Chọn chủ đề để đổi đồng bộ màu nhấn, nền và hoạ tiết. Bạn vẫn tinh chỉnh thêm bên dưới được.</p>
+      </div>
       <div className="space-y-2">
         <Label>Giao diện</Label>
         <div className="flex gap-2">

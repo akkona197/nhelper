@@ -1,5 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useAuth } from "@/context/AuthContext";
+import { usePreferences, THEMES } from "@/context/PreferencesContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Home, Calendar, Inbox, Sparkles, BarChart3, LogOut, Bell, Pin, MessageSquare, Rocket, PanelLeftClose, PanelLeftOpen } from "lucide-react";
@@ -33,6 +34,8 @@ const readCollapsed = (m: ViewMode): boolean => {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, profile, signOut } = useAuth();
+  const { themePack } = usePreferences();
+  const themeBadge = THEMES[themePack]?.badge;
   const loc = useLocation();
   const [unread, setUnread] = useState(0);
   const [mode, setMode] = useState<ViewMode>(() => {
@@ -91,7 +94,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Sparkles className="size-4 text-primary-foreground" />
               </div>
             )}
-            {!collapsed && <div className="font-semibold tracking-tight truncate">Master Task</div>}
+            {!collapsed && (
+              <div className="font-semibold tracking-tight truncate">
+                Master Task{themeBadge ? ` ${themeBadge}` : ""}
+              </div>
+            )}
           </Link>
           {!collapsed && (
             <Button
