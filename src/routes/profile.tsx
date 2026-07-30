@@ -171,6 +171,7 @@ function PreferencesCard() {
     setThemePack(key);
     setAccent(t.accent);
     setBackground(t.background);
+    setTextColor("default");
   }
   const bgFileRef = useRef<HTMLInputElement>(null);
   const [bgUploading, setBgUploading] = useState(false);

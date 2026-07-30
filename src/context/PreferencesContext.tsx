@@ -138,7 +138,7 @@ export const ANIM_BG_PREVIEW: Record<string, string> = {
 // Chủ đề (theme pack): chọn 1 chủ đề sẽ áp màu nhấn + nền + hoạ tiết cho toàn app
 export const THEMES: Record<string, { label: string; accent: string; background: BackgroundId; badge?: string }> = {
   none: { label: "Mặc định", accent: "default", background: "default" },
-  vietnam: { label: "Việt Nam 🇻🇳", accent: "red", background: "vietnam", badge: "🇻🇳" },
+  vietnam: { label: "Việt Nam 🇻🇳", accent: "default", background: "vietnam", badge: "🇻🇳" },
 };
 
 function ensureFontLink(id: string, href: string) {

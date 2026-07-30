@@ -250,30 +250,67 @@ body.bg-anim-holopastel {
 .mascot-wiggle { animation: mascotWiggle 0.8s ease; }
 @media (prefers-reduced-motion: reduce) { .mascot-float, .mascot-jump, .mascot-wiggle { animation: none; } }
 
-/* ===== Chủ đề Việt Nam (đỏ - vàng, hoạ tiết sao) ===== */
-@keyframes vnShimmer { 0%, 100% { background-position: 50% 0%, 50% 0%; } 50% { background-position: 50% 100%, 50% 20%; } }
+/* ===== Chủ đề Việt Nam (đỏ trầm - chữ kem - nhấn vàng gold) ===== */
+/* Bảng màu trọn bộ để chữ luôn rõ trên nền đỏ */
+[data-theme-pack="vietnam"] {
+  --background: oklch(0.33 0.14 27);
+  --foreground: oklch(0.97 0.02 92);
+
+  --card: oklch(0.30 0.13 27);
+  --card-foreground: oklch(0.97 0.02 92);
+  --popover: oklch(0.28 0.12 27);
+  --popover-foreground: oklch(0.97 0.02 92);
+
+  --primary: oklch(0.86 0.18 95);            /* vàng gold */
+  --primary-foreground: oklch(0.30 0.13 27);
+
+  --secondary: oklch(0.38 0.13 28);
+  --secondary-foreground: oklch(0.98 0.02 92);
+  --muted: oklch(0.38 0.11 27);
+  --muted-foreground: oklch(0.88 0.06 94);
+  --accent: oklch(0.86 0.18 95);
+  --accent-foreground: oklch(0.30 0.13 27);
+
+  --border: oklch(0.86 0.14 92 / 0.28);
+  --input: oklch(0.36 0.11 27);
+  --ring: oklch(0.86 0.18 95);
+
+  --sidebar: oklch(0.29 0.13 27);
+  --sidebar-foreground: oklch(0.97 0.02 92);
+  --sidebar-primary: oklch(0.86 0.18 95);
+  --sidebar-primary-foreground: oklch(0.30 0.13 27);
+  --sidebar-accent: oklch(0.41 0.14 28);
+  --sidebar-accent-foreground: oklch(0.99 0.02 94);
+  --sidebar-border: oklch(0.86 0.14 92 / 0.25);
+  --sidebar-ring: oklch(0.86 0.18 95);
+
+  --gradient-primary: linear-gradient(135deg, oklch(0.86 0.18 95), oklch(0.72 0.2 45));
+  --gradient-surface: linear-gradient(180deg, oklch(0.31 0.13 27), oklch(0.26 0.12 26));
+}
+
+@keyframes vnShimmer { 0%, 100% { background-position: 0 0, 0 0, 50% 0%, 50% 0%; } 50% { background-position: 22px 22px, -22px 22px, 50% 100%, 50% 20%; } }
 body.bg-theme-vietnam {
   background:
-    radial-gradient(58% 44% at 50% 42%, oklch(0.88 0.18 96 / 0.55), transparent 60%),
-    linear-gradient(160deg, oklch(0.52 0.21 28), oklch(0.43 0.2 26) 55%, oklch(0.34 0.17 25));
-  background-size: 100% 140%, 100% 140%;
-  animation: vnShimmer 18s ease-in-out infinite;
+    repeating-linear-gradient(45deg, oklch(0.86 0.18 95 / 0.06) 0 1.5px, transparent 1.5px 22px),
+    repeating-linear-gradient(-45deg, oklch(0.86 0.18 95 / 0.06) 0 1.5px, transparent 1.5px 22px),
+    radial-gradient(56% 42% at 50% 42%, oklch(0.9 0.17 96 / 0.5), transparent 60%),
+    linear-gradient(160deg, oklch(0.5 0.21 28), oklch(0.4 0.2 26) 55%, oklch(0.32 0.17 25));
+  background-size: 44px 44px, 44px 44px, 100% 140%, 100% 140%;
+  animation: vnShimmer 20s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) { body.bg-theme-vietnam { animation: none; } }
 
-/* Hoạ tiết chủ đề Việt Nam cho sidebar */
+/* Sidebar chủ đề Việt Nam: viền vàng trên + ngôi sao góc */
 [data-theme-pack="vietnam"] aside {
-  background: color-mix(in oklab, var(--color-sidebar), oklch(0.5 0.2 28) 14%);
-  box-shadow: inset 0 3px 0 oklch(0.86 0.19 96);
+  box-shadow: inset 0 3px 0 oklch(0.86 0.18 95);
 }
 [data-theme-pack="vietnam"] aside::after {
   content: "★";
   position: absolute;
-  top: 10px;
+  top: 9px;
   right: 12px;
-  font-size: 14px;
-  color: oklch(0.86 0.19 96);
-  opacity: 0.9;
+  font-size: 15px;
+  color: oklch(0.9 0.17 96);
   pointer-events: none;
 }
 
