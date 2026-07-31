@@ -27,9 +27,11 @@ import {
   Trash2,
   StickyNote,
   FolderKanban,
+  AlarmClock,
   X,
 } from "lucide-react";
 import { NotesPanel } from "@/components/NotesPanel";
+import { OverdueSheet } from "@/components/OverdueSheet";
 import {
   fmtDate,
   getWeekDays,
@@ -129,6 +131,8 @@ function WeekView() {
   const [detailTask, setDetailTask] = useState<TaskRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [managerOpen, setManagerOpen] = useState(false);
+  const [overdueOpen, setOverdueOpen] = useState(false);
+  const [overdueCount, setOverdueCount] = useState(0);
   const [projectFilter, setProjectFilter] = useState<string | null>(null);
   const [labelFilter, setLabelFilter] = useState<string | null>(null);
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
@@ -323,6 +327,20 @@ function WeekView() {
       }
     })();
   }, [user, reload]);
+
+  const loadOverdueCount = useCallback(async () => {
+    if (!user) return;
+    const today = fmtDate(new Date());
+    const { count } = await supabase
+      .from("task_instances")
+      .select("id", { count: "exact", head: true })
+      .lt("scheduled_date", today)
+      .eq("is_done", false);
+    setOverdueCount(count ?? 0);
+  }, [user]);
+  useEffect(() => {
+    loadOverdueCount();
+  }, [loadOverdueCount, instances]);
 
   const projectById = useMemo(() => Object.fromEntries(projects.map((p) => [p.id, p])), [projects]);
   const labelById = useMemo(() => Object.fromEntries(labels.map((l) => [l.id, l])), [labels]);
@@ -536,6 +554,18 @@ function WeekView() {
               <Copy className="size-4 mr-1.5" /> Nhân bản tuần sau
             </Button>
           )}
+          <Button
+            variant="outline"
+            onClick={() => setOverdueOpen(true)}
+            className={overdueCount > 0 ? "border-destructive/50 text-destructive hover:text-destructive" : ""}
+          >
+            <AlarmClock className="size-4 mr-1.5" /> Quá hạn
+            {overdueCount > 0 && (
+              <span className="ml-1.5 text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-destructive/15 text-destructive">
+                {overdueCount}
+              </span>
+            )}
+          </Button>
           <Button variant="outline" onClick={() => setManagerOpen(true)}>
             <FolderKanban className="size-4 mr-1.5" /> Dự án & Nhãn
           </Button>
@@ -824,6 +854,14 @@ function WeekView() {
         open={managerOpen}
         onOpenChange={setManagerOpen}
         onChanged={reload}
+      />
+      <OverdueSheet
+        open={overdueOpen}
+        onOpenChange={setOverdueOpen}
+        onChanged={() => {
+          reload();
+          loadOverdueCount();
+        }}
       />
     </div>
   );
