@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Check, CalendarClock, Trash2, PartyPopper } from "lucide-react";
+import { Check, CalendarClock, Trash2, PartyPopper, Maximize2, Minimize2 } from "lucide-react";
 import { format, differenceInCalendarDays } from "date-fns";
 import { vi } from "date-fns/locale";
 import { toast } from "sonner";
@@ -35,6 +35,17 @@ export function OverdueSheet({
 }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("mt.overdue.expanded") === "1";
+  });
+  const toggleExpanded = () => {
+    setExpanded((v) => {
+      const next = !v;
+      if (typeof window !== "undefined") localStorage.setItem("mt.overdue.expanded", next ? "1" : "0");
+      return next;
+    });
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,7 +104,10 @@ export function OverdueSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0">
+      <SheetContent
+        side="right"
+        className={`w-full ${expanded ? "sm:max-w-3xl" : "sm:max-w-lg"} flex flex-col p-0 overflow-hidden transition-[max-width] duration-200`}
+      >
         <SheetHeader className="shrink-0 px-5 pt-5 pb-3 border-b border-border">
           <SheetTitle className="flex items-center gap-2">
             Quá hạn chưa xong
@@ -102,6 +116,14 @@ export function OverdueSheet({
             )}
           </SheetTitle>
           <SheetDescription>Task ở những ngày đã qua mà chưa tick hoàn thành. Dọn dần nhé!</SheetDescription>
+          <button
+            onClick={toggleExpanded}
+            title={expanded ? "Thu nhỏ" : "Phóng to"}
+            className="absolute right-12 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+          >
+            {expanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+            <span className="sr-only">{expanded ? "Thu nhỏ" : "Phóng to"}</span>
+          </button>
         </SheetHeader>
 
         <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-2">
