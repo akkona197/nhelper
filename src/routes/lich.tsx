@@ -20,7 +20,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Copy,
   Check,
   Clock,
   Pencil,
@@ -452,43 +451,6 @@ function WeekView() {
     reload();
   }
 
-  async function duplicateWeek() {
-    if (!user) return;
-    const weekStart = getWeekStart(anchor);
-    const weekDays = getWeekDays(weekStart);
-    const nextStart = addWeeks(weekStart, 1);
-    const weekStartStr = fmtDate(weekDays[0]);
-    const weekEndStr = fmtDate(weekDays[6]);
-    const oneOff = instances.filter((i) => {
-      const t = tasks.find((tt) => tt.id === i.task_id);
-      return t?.recurrence === "none" && i.scheduled_date >= weekStartStr && i.scheduled_date <= weekEndStr;
-    });
-    if (oneOff.length === 0) {
-      toast("Không có task 1-lần nào để nhân bản. (Task lặp tự sinh ở tuần sau.)");
-      return;
-    }
-    const inserts = oneOff.map((i) => {
-      const oldDate = new Date(i.scheduled_date);
-      const offset = weekDays.findIndex((d) => isSameDay(d, oldDate));
-      const newDate = addDays(nextStart, offset >= 0 ? offset : 0);
-      return {
-        user_id: user.id,
-        task_id: i.task_id,
-        scheduled_date: fmtDate(newDate),
-        scheduled_time: i.scheduled_time,
-        estimate_minutes: i.estimate_minutes,
-      };
-    });
-    const { error } = await supabase
-      .from("task_instances")
-      .upsert(inserts, { onConflict: "task_id,scheduled_date" });
-    if (error) toast.error(error.message);
-    else {
-      toast.success(`Đã nhân bản ${inserts.length} task sang tuần sau`);
-      setAnchor(nextStart);
-    }
-  }
-
   function openCreate(date?: Date) {
     setEditing(null);
     setDefaultDate(date);
@@ -549,11 +511,6 @@ function WeekView() {
           <Button variant="outline" size="icon" onClick={() => shift(1)}>
             <ChevronRight className="size-4" />
           </Button>
-          {mode !== "month" && (
-            <Button variant="outline" onClick={duplicateWeek}>
-              <Copy className="size-4 mr-1.5" /> Nhân bản tuần sau
-            </Button>
-          )}
           <Button
             variant="outline"
             onClick={() => setOverdueOpen(true)}
