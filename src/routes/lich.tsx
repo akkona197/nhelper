@@ -862,6 +862,13 @@ function WeekView() {
           reload();
           loadOverdueCount();
         }}
+        onOpenTask={(taskId) => {
+          const t = tasks.find((x) => x.id === taskId);
+          if (!t) return;
+          setOverdueOpen(false);
+          setDetailTask(t);
+          setDetailOpen(true);
+        }}
       />
     </div>
   );

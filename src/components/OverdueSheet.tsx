@@ -28,10 +28,12 @@ export function OverdueSheet({
   open,
   onOpenChange,
   onChanged,
+  onOpenTask,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onChanged?: () => void;
+  onOpenTask?: (taskId: string) => void;
 }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
@@ -141,13 +143,18 @@ export function OverdueSheet({
             return (
               <div key={r.id} className="surface rounded-lg border p-3 flex items-start gap-3">
                 <span className={`mt-1.5 size-2 rounded-full shrink-0 ${DOT[r.priority] ?? DOT.medium}`} />
-                <div className="flex-1 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => onOpenTask?.(r.task_id)}
+                  className="flex-1 min-w-0 text-left rounded-md -m-1 p-1 hover:bg-secondary/50 transition-colors"
+                  title="Xem chi tiết task"
+                >
                   <div className="text-sm font-medium truncate">{r.title}</div>
                   <div className="text-[11px] text-muted-foreground mt-0.5">
                     {format(d, "EEE, dd/MM/yyyy", { locale: vi })}
                     {daysAgo > 0 ? ` • quá ${daysAgo} ngày` : ""}
                   </div>
-                </div>
+                </button>
                 <div className="flex items-center gap-1 shrink-0">
                   <Button size="icon" variant="ghost" className="size-8" title="Đánh dấu hoàn thành" onClick={() => markDone(r.id)}>
                     <Check className="size-4 text-emerald-500" />
