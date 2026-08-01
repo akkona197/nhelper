@@ -237,9 +237,7 @@ body.bg-anim-holopastel {
   animation: bgHoloPastel 26s ease-in-out infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  body.bg-anim-hologram, body.bg-anim-holopastel, body.bg-anim-nebula, body.bg-anim-waves { animation: none; }
-}
+/* Nền động là do người dùng chủ động chọn -> luôn cho chạy (không tắt theo reduced-motion). */
 
 /* Linh vật Bé Lúa */
 @keyframes mascotFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
@@ -298,7 +296,6 @@ body.bg-theme-vietnam {
   background-size: 44px 44px, 44px 44px, 100% 140%, 100% 140%;
   animation: vnShimmer 20s ease-in-out infinite;
 }
-@media (prefers-reduced-motion: reduce) { body.bg-theme-vietnam { animation: none; } }
 
 /* Sidebar chủ đề Việt Nam: viền vàng trên + ngôi sao góc */
 [data-theme-pack="vietnam"] aside {
