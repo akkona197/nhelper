@@ -198,29 +198,32 @@
 @keyframes bgNebulaShift { 0% { background-position: 0% 0%, 100% 100%; } 50% { background-position: 100% 60%, 0% 40%; } 100% { background-position: 0% 0%, 100% 100%; } }
 @keyframes bgWavesShift { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
 
-body.bg-anim-hologram {
+body.bg-anim-hologram::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
-    linear-gradient(125deg, oklch(0.6 0.2 285 / 0.45), oklch(0.62 0.16 215 / 0.4), oklch(0.62 0.2 340 / 0.4), oklch(0.62 0.16 195 / 0.4), oklch(0.6 0.2 285 / 0.45)),
+    linear-gradient(125deg, oklch(0.62 0.22 285 / 0.55), oklch(0.64 0.18 215 / 0.5), oklch(0.64 0.22 340 / 0.5), oklch(0.64 0.18 195 / 0.5), oklch(0.62 0.22 285 / 0.55)),
     var(--color-background);
   background-size: 320% 320%, 100% 100%;
-  animation: bgHoloShift 18s ease infinite;
+  animation: bgHoloShift 9s ease-in-out infinite;
 }
 
-body.bg-anim-nebula {
+body.bg-anim-nebula::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(700px 500px at 20% 20%, oklch(0.68 0.2 300 / 0.35), transparent 60%),
-    radial-gradient(800px 600px at 80% 80%, oklch(0.68 0.18 215 / 0.3), transparent 60%),
+    radial-gradient(700px 500px at 20% 20%, oklch(0.68 0.2 300 / 0.42), transparent 60%),
+    radial-gradient(800px 600px at 80% 80%, oklch(0.68 0.18 215 / 0.38), transparent 60%),
     var(--color-background);
   background-size: 200% 200%, 220% 220%, 100% 100%;
-  animation: bgNebulaShift 26s ease-in-out infinite;
+  animation: bgNebulaShift 13s ease-in-out infinite;
 }
 
-body.bg-anim-waves {
+body.bg-anim-waves::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
-    linear-gradient(60deg, oklch(0.55 0.16 250 / 0.4), oklch(0.6 0.15 190 / 0.35), oklch(0.55 0.16 250 / 0.4)),
+    linear-gradient(60deg, oklch(0.55 0.17 250 / 0.5), oklch(0.62 0.16 190 / 0.42), oklch(0.55 0.17 250 / 0.5)),
     var(--color-background);
   background-size: 200% 200%, 100% 100%;
-  animation: bgWavesShift 18s linear infinite;
+  animation: bgWavesShift 7s linear infinite;
 }
 
 /* Hologram pastel (giống ảnh 4K, dùng gradient nên nét ở mọi độ phân giải) */
@@ -229,12 +232,13 @@ body.bg-anim-waves {
   50% { background-position: 100% 50%, 100% 35%; }
   100% { background-position: 0% 50%, 0% 50%; }
 }
-body.bg-anim-holopastel {
+body.bg-anim-holopastel::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
     radial-gradient(70% 60% at 30% 25%, rgba(255, 255, 255, 0.55), transparent 60%),
     linear-gradient(115deg, #ffd1dc, #c8f7e0, #d5c9ff, #ffe6c7, #c7e9ff, #ffd1f0, #b5e8ff, #ffd1dc);
   background-size: 220% 220%, 400% 400%;
-  animation: bgHoloPastel 26s ease-in-out infinite;
+  animation: bgHoloPastel 12s ease-in-out infinite;
 }
 
 /* Nền động là do người dùng chủ động chọn -> luôn cho chạy (không tắt theo reduced-motion). */
@@ -287,14 +291,15 @@ body.bg-anim-holopastel {
 }
 
 @keyframes vnShimmer { 0%, 100% { background-position: 0 0, 0 0, 50% 0%, 50% 0%; } 50% { background-position: 22px 22px, -22px 22px, 50% 100%, 50% 20%; } }
-body.bg-theme-vietnam {
+body.bg-theme-vietnam::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
     repeating-linear-gradient(45deg, oklch(0.86 0.18 95 / 0.06) 0 1.5px, transparent 1.5px 22px),
     repeating-linear-gradient(-45deg, oklch(0.86 0.18 95 / 0.06) 0 1.5px, transparent 1.5px 22px),
     radial-gradient(56% 42% at 50% 42%, oklch(0.9 0.17 96 / 0.5), transparent 60%),
     linear-gradient(160deg, oklch(0.5 0.21 28), oklch(0.4 0.2 26) 55%, oklch(0.32 0.17 25));
   background-size: 44px 44px, 44px 44px, 100% 140%, 100% 140%;
-  animation: vnShimmer 20s ease-in-out infinite;
+  animation: vnShimmer 14s ease-in-out infinite;
 }
 
 /* Sidebar chủ đề Việt Nam: viền vàng trên + ngôi sao góc */
