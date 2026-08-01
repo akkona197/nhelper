@@ -1,7 +1,9 @@
 import { Outlet, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/context/AuthContext";
 import { PreferencesProvider } from "@/context/PreferencesContext";
+import { MovedNotice } from "@/components/MovedNotice";
 
 import appCss from "../styles.css?url";
 import wheatIcon from "@/assets/wheat.svg?url";
@@ -60,6 +62,16 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  // Trang cũ trên *.lovable.app: hiện thông báo đã chuyển nhà, không chạy app.
+  const [moved, setMoved] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hostname.endsWith("lovable.app")) {
+      setMoved(true);
+    }
+  }, []);
+
+  if (moved) return <MovedNotice />;
+
   return (
     <PreferencesProvider>
       <AuthProvider>
