@@ -54,6 +54,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
     <html lang="vi">
       <head><HeadContent /></head>
       <body>
+        <div id="mt-bg" aria-hidden="true" />
         {children}
         <Scripts />
       </body>

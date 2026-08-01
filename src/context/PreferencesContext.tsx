@@ -246,16 +246,17 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem("pref:background", background);
     localStorage.setItem("pref:backgroundUrl", backgroundUrl);
-    const body = document.body;
+    const el = document.getElementById("mt-bg");
+    if (!el) return;
     // Xoá mọi class nền động trước
-    Object.values(ANIM_BG).forEach((cls) => body.classList.remove(cls));
+    Object.values(ANIM_BG).forEach((cls) => el.classList.remove(cls));
     if (ANIM_BG[background]) {
-      body.style.background = "";
-      body.classList.add(ANIM_BG[background]);
+      el.style.background = "";
+      el.classList.add(ANIM_BG[background]);
     } else if (background === "custom" && backgroundUrl) {
-      body.style.background = `url("${backgroundUrl}") center center / cover no-repeat fixed, var(--color-background)`;
+      el.style.background = `url("${backgroundUrl}") center center / cover no-repeat`;
     } else {
-      body.style.background = (BG_PRESETS as Record<string, string>)[background] ?? BG_PRESETS.default;
+      el.style.background = (BG_PRESETS as Record<string, string>)[background] ?? BG_PRESETS.default;
     }
   }, [background, backgroundUrl]);
 

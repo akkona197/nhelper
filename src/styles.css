@@ -193,22 +193,23 @@
   }
 }
 
-/* ===== Background động (cá nhân hóa trong Hồ sơ) ===== */
+/* ===== Background động (cá nhân hóa trong Hồ sơ) =====
+   Áp lên lớp #mt-bg (div cố định thật sự) để animation luôn chạy tin cậy. */
+#mt-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+
 @keyframes bgHoloShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 @keyframes bgNebulaShift { 0% { background-position: 0% 0%, 100% 100%; } 50% { background-position: 100% 60%, 0% 40%; } 100% { background-position: 0% 0%, 100% 100%; } }
 @keyframes bgWavesShift { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+@keyframes bgHoloPastel { 0% { background-position: 0% 50%, 0% 50%; } 50% { background-position: 100% 50%, 100% 35%; } 100% { background-position: 0% 50%, 0% 50%; } }
 
-body.bg-anim-hologram::before {
-  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+#mt-bg.bg-anim-hologram {
   background:
     linear-gradient(125deg, oklch(0.62 0.22 285 / 0.55), oklch(0.64 0.18 215 / 0.5), oklch(0.64 0.22 340 / 0.5), oklch(0.64 0.18 195 / 0.5), oklch(0.62 0.22 285 / 0.55)),
     var(--color-background);
   background-size: 320% 320%, 100% 100%;
   animation: bgHoloShift 9s ease-in-out infinite;
 }
-
-body.bg-anim-nebula::before {
-  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+#mt-bg.bg-anim-nebula {
   background:
     radial-gradient(700px 500px at 20% 20%, oklch(0.68 0.2 300 / 0.42), transparent 60%),
     radial-gradient(800px 600px at 80% 80%, oklch(0.68 0.18 215 / 0.38), transparent 60%),
@@ -216,24 +217,14 @@ body.bg-anim-nebula::before {
   background-size: 200% 200%, 220% 220%, 100% 100%;
   animation: bgNebulaShift 13s ease-in-out infinite;
 }
-
-body.bg-anim-waves::before {
-  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+#mt-bg.bg-anim-waves {
   background:
     linear-gradient(60deg, oklch(0.55 0.17 250 / 0.5), oklch(0.62 0.16 190 / 0.42), oklch(0.55 0.17 250 / 0.5)),
     var(--color-background);
   background-size: 200% 200%, 100% 100%;
   animation: bgWavesShift 7s linear infinite;
 }
-
-/* Hologram pastel (giống ảnh 4K, dùng gradient nên nét ở mọi độ phân giải) */
-@keyframes bgHoloPastel {
-  0% { background-position: 0% 50%, 0% 50%; }
-  50% { background-position: 100% 50%, 100% 35%; }
-  100% { background-position: 0% 50%, 0% 50%; }
-}
-body.bg-anim-holopastel::before {
-  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+#mt-bg.bg-anim-holopastel {
   background:
     radial-gradient(70% 60% at 30% 25%, rgba(255, 255, 255, 0.55), transparent 60%),
     linear-gradient(115deg, #ffd1dc, #c8f7e0, #d5c9ff, #ffe6c7, #c7e9ff, #ffd1f0, #b5e8ff, #ffd1dc);
@@ -291,8 +282,7 @@ body.bg-anim-holopastel::before {
 }
 
 @keyframes vnShimmer { 0%, 100% { background-position: 0 0, 0 0, 50% 0%, 50% 0%; } 50% { background-position: 22px 22px, -22px 22px, 50% 100%, 50% 20%; } }
-body.bg-theme-vietnam::before {
-  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+#mt-bg.bg-theme-vietnam {
   background:
     repeating-linear-gradient(45deg, oklch(0.86 0.18 95 / 0.06) 0 1.5px, transparent 1.5px 22px),
     repeating-linear-gradient(-45deg, oklch(0.86 0.18 95 / 0.06) 0 1.5px, transparent 1.5px 22px),
