@@ -163,10 +163,15 @@
     border-color: var(--color-border);
   }
 
-  html, body {
+  /* Nền nền tảng để trên HTML; BODY trong suốt để lớp #mt-bg (z-index:-1) hiện ra
+     (nếu body có nền đục sẽ vẽ đè lên #mt-bg khiến chọn hình nền không thấy đổi). */
+  html {
     background: radial-gradient(1200px 600px at 80% -10%, oklch(0.72 0.18 285 / 0.12), transparent 60%),
                 radial-gradient(800px 400px at -10% 110%, oklch(0.78 0.16 215 / 0.1), transparent 60%),
                 var(--color-background);
+  }
+  body {
+    background: transparent;
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
