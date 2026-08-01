@@ -1,4 +1,4 @@
-// Parse a free-form message into structured task suggestions using Google Gemini.
+// Parse a free-form message into structured task suggestions using Cloudflare Workers AI.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -7,13 +7,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Thử lần lượt các model tới khi trúng model có free tier ở tài khoản của bạn.
+// Model chinh + du phong (neu model chinh loi/het quota -> thu model nhe hon).
 const MODELS = [
-  "gemini-2.5-flash",
-  "gemini-2.0-flash-lite",
-  "gemini-2.5-flash-lite",
-  "gemini-1.5-flash",
-  "gemini-2.0-flash",
+  "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+  "@cf/meta/llama-3.1-8b-instruct",
 ];
 
 serve(async (req) => {
@@ -30,95 +27,126 @@ serve(async (req) => {
       });
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
+    const ACCOUNT_ID = Deno.env.get("CF_ACCOUNT_ID");
+    const CF_API_TOKEN = Deno.env.get("CF_API_TOKEN");
+    if (!ACCOUNT_ID || !CF_API_TOKEN) {
       return new Response(
-        JSON.stringify({ error: "GEMINI_API_KEY not configured" }),
+        JSON.stringify({ error: "CF_ACCOUNT_ID / CF_API_TOKEN chua duoc cau hinh" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     const referenceTime = now || new Date().toISOString();
 
-    const systemPrompt = `Bạn là trợ lý phân loại task. Người dùng dán vào một đoạn tin nhắn (có thể tiếng Việt hoặc Anh). Bạn phải trích xuất các công việc cần làm.
+    const systemPrompt = `Bạn là trợ lý phân loại task. Người dùng dán vào một đoạn tin nhắn (tiếng Việt hoặc Anh). Trích xuất các công việc cần làm và CHỈ trả về JSON đúng schema.
 
 Quy tắc:
 - Mỗi task: title ngắn gọn rõ hành động, description tóm tắt ngữ cảnh.
 - priority: "high" nếu có "gấp/urgent/asap/trước...", "low" nếu "khi nào rảnh/khi tiện", còn lại "medium".
-- estimate_minutes: ước lượng thời gian thực hiện (15, 30, 60, 90, 120...).
-- deadline (ISO 8601 với offset, hoặc null): suy ra từ "trước thứ 6", "ngày mai 5h chiều", "cuối tuần này"... Mốc thời gian hiện tại: ${referenceTime}. Nếu chỉ có ngày, đặt 18:00.
-- Nếu không có task rõ ràng, trả mảng rỗng.`;
+- estimate_minutes: ước lượng thời gian (15, 30, 60, 90, 120...).
+- deadline: chuỗi ISO 8601 có offset, hoặc null. Suy ra từ "trước thứ 6", "ngày mai 5h chiều", "cuối tuần này"... Mốc thời gian hiện tại: ${referenceTime}. Nếu chỉ có ngày, đặt 18:00.
+- Nếu không có task rõ ràng, trả {"tasks": []}.`;
 
-    const body = JSON.stringify({
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: "user", parts: [{ text: message }] }],
-      generationConfig: {
-        temperature: 0.2,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            tasks: {
-              type: "ARRAY",
-              items: {
-                type: "OBJECT",
-                properties: {
-                  title: { type: "STRING" },
-                  description: { type: "STRING" },
-                  priority: { type: "STRING", enum: ["low", "medium", "high"] },
-                  estimate_minutes: { type: "NUMBER" },
-                  deadline: { type: "STRING", nullable: true },
-                },
-                required: ["title", "priority", "estimate_minutes"],
-              },
+    const jsonSchema = {
+      type: "object",
+      properties: {
+        tasks: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              description: { type: "string" },
+              priority: { type: "string", enum: ["low", "medium", "high"] },
+              estimate_minutes: { type: "number" },
+              deadline: { type: ["string", "null"] },
             },
+            required: ["title", "priority", "estimate_minutes"],
           },
-          required: ["tasks"],
         },
       },
+      required: ["tasks"],
+    };
+
+    const body = JSON.stringify({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: message },
+      ],
+      response_format: { type: "json_schema", json_schema: jsonSchema },
+      max_tokens: 2048,
+      temperature: 0.2,
     });
 
-    let data: any = null;
+    let parsed: any = null;
     let lastStatus = 0;
     let lastText = "";
     let usedModel = "";
 
     for (const model of MODELS) {
       const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
-        { method: "POST", headers: { "Content-Type": "application/json" }, body },
+        `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/ai/run/${model}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${CF_API_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body,
+        },
       );
-      if (resp.ok) {
-        data = await resp.json();
+
+      const raw = await resp.text();
+      if (!resp.ok) {
+        lastStatus = resp.status;
+        lastText = raw;
+        console.error("Cloudflare AI error", model, resp.status, raw);
+        continue; // thu model ke tiep
+      }
+
+      let data: any;
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        lastText = raw;
+        console.error("Cloudflare AI non-JSON", model, raw);
+        continue;
+      }
+
+      if (data?.success === false) {
+        lastText = raw;
+        console.error("Cloudflare AI success=false", model, raw);
+        continue;
+      }
+
+      // result.response co the la object (khi dung json_schema) hoac string.
+      const out = data?.result?.response;
+      try {
+        parsed = typeof out === "string" ? JSON.parse(out) : out;
+      } catch (e) {
+        console.error("parse CF output failed", model, e, out);
+        continue;
+      }
+      if (parsed) {
         usedModel = model;
         break;
       }
-      lastStatus = resp.status;
-      lastText = await resp.text();
-      console.error("Gemini error", model, resp.status, lastText);
-      // 429 (hết quota model này) hoặc 404 (model không có) -> thử model kế tiếp
-      if (resp.status !== 429 && resp.status !== 404) break;
     }
 
-    if (!data) {
-      const msg = lastStatus === 429
-        ? "Tất cả model đều hết hạn mức free của Gemini. Kiểm tra lại API key (nên dùng tài khoản Google cá nhân có free tier)."
-        : "AI service error";
-      return new Response(JSON.stringify({ error: msg, detail: lastText.slice(0, 500) }), {
-        status: lastStatus || 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!parsed) {
+      return new Response(
+        JSON.stringify({
+          error: "AI service error",
+          detail: lastText.slice(0, 500),
+        }),
+        {
+          status: lastStatus || 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    let tasks: unknown[] = [];
-    if (text) {
-      try {
-        tasks = JSON.parse(text).tasks ?? [];
-      } catch (e) {
-        console.error("parse Gemini output failed", e, text);
-      }
-    }
+    const tasks = Array.isArray(parsed?.tasks) ? parsed.tasks : [];
 
     return new Response(JSON.stringify({ tasks, model: usedModel }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
