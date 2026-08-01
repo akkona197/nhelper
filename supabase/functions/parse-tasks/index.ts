@@ -1,4 +1,4 @@
-// Parse a free-form message into structured task suggestions using Lovable AI.
+// Parse a free-form message into structured task suggestions using Google Gemini.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -6,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+const MODEL = "gemini-2.0-flash";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -21,10 +23,10 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "LOVABLE_API_KEY not configured" }),
+        JSON.stringify({ error: "GEMINI_API_KEY not configured" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -44,63 +46,36 @@ Quy tắc:
 - Nếu không có task rõ ràng, trả mảng rỗng.`;
 
     const resp = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: message },
-          ],
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "extract_tasks",
-                description: "Trả về danh sách task được trích xuất.",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    tasks: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          title: { type: "string" },
-                          description: { type: "string" },
-                          priority: {
-                            type: "string",
-                            enum: ["low", "medium", "high"],
-                          },
-                          estimate_minutes: { type: "number" },
-                          deadline: {
-                            type: ["string", "null"],
-                            description: "ISO 8601 hoặc null",
-                          },
-                        },
-                        required: [
-                          "title",
-                          "priority",
-                          "estimate_minutes",
-                        ],
-                        additionalProperties: false,
-                      },
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: "user", parts: [{ text: message }] }],
+          generationConfig: {
+            temperature: 0.2,
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: "OBJECT",
+              properties: {
+                tasks: {
+                  type: "ARRAY",
+                  items: {
+                    type: "OBJECT",
+                    properties: {
+                      title: { type: "STRING" },
+                      description: { type: "STRING" },
+                      priority: { type: "STRING", enum: ["low", "medium", "high"] },
+                      estimate_minutes: { type: "NUMBER" },
+                      deadline: { type: "STRING", nullable: true },
                     },
+                    required: ["title", "priority", "estimate_minutes"],
                   },
-                  required: ["tasks"],
-                  additionalProperties: false,
                 },
               },
+              required: ["tasks"],
             },
-          ],
-          tool_choice: {
-            type: "function",
-            function: { name: "extract_tasks" },
           },
         }),
       },
@@ -108,45 +83,28 @@ Quy tắc:
 
     if (!resp.ok) {
       const txt = await resp.text();
-      console.error("AI gateway error", resp.status, txt);
+      console.error("Gemini error", resp.status, txt);
       if (resp.status === 429) {
         return new Response(
-          JSON.stringify({
-            error: "Đã đụng giới hạn AI, thử lại sau ít phút nhé.",
-          }),
-          {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
+          JSON.stringify({ error: "Đã đụng giới hạn AI, thử lại sau ít phút nhé." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      if (resp.status === 402) {
-        return new Response(
-          JSON.stringify({
-            error:
-              "Hết credit AI. Vào Settings → Workspace → Usage để nạp thêm.",
-          }),
-          {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
+      return new Response(JSON.stringify({ error: "AI service error" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const data = await resp.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
     let tasks: unknown[] = [];
-    if (toolCall?.function?.arguments) {
+    if (text) {
       try {
-        const parsed = JSON.parse(toolCall.function.arguments);
+        const parsed = JSON.parse(text);
         tasks = parsed.tasks ?? [];
       } catch (e) {
-        console.error("parse arguments failed", e);
+        console.error("parse Gemini output failed", e, text);
       }
     }
 
@@ -156,13 +114,8 @@ Quy tắc:
   } catch (e) {
     console.error("parse-tasks error", e);
     return new Response(
-      JSON.stringify({
-        error: e instanceof Error ? e.message : "Unknown error",
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
+      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
