@@ -7,10 +7,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Model chinh + du phong (neu model chinh loi/het quota -> thu model nhe hon).
+// Model nhe/nhanh lam chinh, 70B lam du phong (chi dung neu 8B loi).
 const MODELS = [
-  "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+  "@cf/meta/llama-3.1-8b-instruct-fast",
   "@cf/meta/llama-3.1-8b-instruct",
+  "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
 ];
 
 serve(async (req) => {
