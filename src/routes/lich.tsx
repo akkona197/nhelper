@@ -6,8 +6,12 @@ import {
   addDays,
   addMonths,
   addWeeks,
+  differenceInCalendarDays,
+  differenceInCalendarMonths,
+  differenceInCalendarWeeks,
   endOfMonth,
   format,
+  getWeek,
   isSameDay,
   isSameMonth,
   startOfMonth,
@@ -36,6 +40,7 @@ import {
   getWeekDays,
   getWeekStart,
   taskOccursOn,
+  WEEK_STARTS_ON,
   type InstanceRow,
   type TaskRow,
   type ProjectRow,
@@ -477,6 +482,29 @@ function WeekView() {
         ? `${format(days[0], "dd MMM", { locale: vi })} – ${format(days[days.length - 1], "dd MMM yyyy", { locale: vi })}`
         : format(anchor, "MMMM yyyy", { locale: vi });
 
+  const navLabel = (() => {
+    if (mode === "week") {
+      const dw = differenceInCalendarWeeks(anchor, today, { weekStartsOn: WEEK_STARTS_ON });
+      if (dw === 0) return "Tuần này";
+      if (dw === -1) return "Tuần trước";
+      if (dw === 1) return "Tuần sau";
+      return `Tuần ${getWeek(anchor, { weekStartsOn: WEEK_STARTS_ON, firstWeekContainsDate: 1 })}`;
+    }
+    if (mode === "month") {
+      const dm = differenceInCalendarMonths(anchor, today);
+      if (dm === 0) return "Tháng này";
+      if (dm === -1) return "Tháng trước";
+      if (dm === 1) return "Tháng sau";
+      return format(anchor, "MM-yyyy");
+    }
+    // day & 3days: theo ngày
+    const dd = differenceInCalendarDays(anchor, today);
+    if (dd === 0) return "Hôm nay";
+    if (dd === -1) return "Hôm qua";
+    if (dd === 1) return "Ngày mai";
+    return format(anchor, "dd-MM-yyyy");
+  })();
+
   const ModeBtn = ({ v, label }: { v: ViewMode; label: string }) => (
     <button
       onClick={() => setMode(v)}
@@ -507,7 +535,14 @@ function WeekView() {
           <Button variant="outline" size="icon" onClick={() => shift(-1)}>
             <ChevronLeft className="size-4" />
           </Button>
-          <Button variant="outline" onClick={() => setAnchor(new Date())}>Hôm nay</Button>
+          <Button
+            variant="outline"
+            className="min-w-[92px]"
+            onClick={() => setAnchor(new Date())}
+            title="Về hiện tại"
+          >
+            {navLabel}
+          </Button>
           <Button variant="outline" size="icon" onClick={() => shift(1)}>
             <ChevronRight className="size-4" />
           </Button>
