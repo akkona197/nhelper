@@ -7,11 +7,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Model nhe/nhanh lam chinh, 70B lam du phong (chi dung neu 8B loi).
+// 70B fp8-fast lam chinh (chat luong tot, van nhanh); 8B du phong neu loi.
 const MODELS = [
-  "@cf/meta/llama-3.1-8b-instruct-fast",
-  "@cf/meta/llama-3.1-8b-instruct",
   "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+  "@cf/meta/llama-3.1-8b-instruct",
 ];
 
 serve(async (req) => {
@@ -39,14 +38,37 @@ serve(async (req) => {
 
     const referenceTime = now || new Date().toISOString();
 
-    const systemPrompt = `Bạn là trợ lý phân loại task. Người dùng dán vào một đoạn tin nhắn (tiếng Việt hoặc Anh). Trích xuất các công việc cần làm và CHỈ trả về JSON đúng schema.
+    const systemPrompt = `Bạn là trợ lý bóc tách công việc từ tin nhắn/email mà người khác giao. Người dùng dán vào một đoạn văn (tiếng Việt hoặc Anh). Trích xuất các ĐẦU VIỆC cần làm và CHỈ trả về JSON đúng schema.
 
-Quy tắc:
-- Mỗi task: title ngắn gọn rõ hành động, description tóm tắt ngữ cảnh.
-- priority: "high" nếu có "gấp/urgent/asap/trước...", "low" nếu "khi nào rảnh/khi tiện", còn lại "medium".
+CÁCH GOM/TÁCH (quan trọng nhất):
+- Mỗi ĐẦU VIỆC cụ thể (một deliverable) = ĐÚNG 1 task. Ví dụ "làm slide SUP" và "chuẩn bị meeting MNG" là 2 task khác nhau.
+- KHÔNG tách một đầu việc thành nhiều task chỉ vì nó được viết trên nhiều dòng. Các dòng mô tả/điều kiện của cùng một việc phải gộp vào description của task đó.
+- KHÔNG gộp nhiều đầu việc khác nhau vào chung 1 task.
+- Các dòng chỉ là NHÃN hoặc THÔNG TIN (ví dụ "Kênh Chat:", "Chat Log:", "PIC:", tên người, đường link, tiêu đề tuần như "W32") KHÔNG phải là task. Đưa các chi tiết này vào description của task liên quan, tuyệt đối không tạo task riêng cho chúng.
+- Nếu một dòng chỉ là thông tin chung/tiêu đề, không có hành động cần làm thì bỏ qua.
+
+TỪNG TRƯỜNG:
+- title: động từ + đối tượng, ngắn gọn (vd "Làm slide SUP tuần W32").
+- description: gộp đủ ngữ cảnh quan trọng (kênh, người phụ trách, link, điều kiện). Nếu thông tin thiếu thì để ngắn gọn, KHÔNG bịa thêm.
+- priority: "high" nếu có "gấp/urgent/asap/trước hạn...", "low" nếu "khi nào rảnh/khi tiện", còn lại "medium".
 - estimate_minutes: ước lượng thời gian (15, 30, 60, 90, 120...).
-- deadline: chuỗi ISO 8601 có offset, hoặc null. Suy ra từ "trước thứ 6", "ngày mai 5h chiều", "cuối tuần này"... Mốc thời gian hiện tại: ${referenceTime}. Nếu chỉ có ngày, đặt 18:00.
-- Nếu không có task rõ ràng, trả {"tasks": []}.`;
+- deadline: chuỗi ISO 8601 có offset, hoặc null. Suy ra từ "thứ 4", "trước thứ 6", "ngày mai 5h chiều", "cuối tuần này"... Mốc thời gian hiện tại: ${referenceTime}. Nếu chỉ có ngày, đặt 18:00. Không rõ thì để null.
+- Nếu không có việc rõ ràng, trả {"tasks": []}.
+
+VÍ DỤ:
+Input:
+"""
+Nghĩa gửi tasklist tuần W32:
+Thứ 4: Slide SUP - các PIC check report W31 & input lên slide SUP
+Kênh Chat: QA CH
+Chat Log: Oanh Nguyễn
+Thứ 6: chuẩn bị meeting MNG, gửi tài liệu trước 5h chiều
+"""
+Output:
+{"tasks":[
+  {"title":"Làm slide SUP tuần W32","description":"Các PIC check report W31 và input lên slide SUP. Kênh: QA CH, chat log: Oanh Nguyễn.","priority":"medium","estimate_minutes":60,"deadline":null},
+  {"title":"Chuẩn bị meeting MNG","description":"Chuẩn bị và gửi tài liệu trước 5h chiều thứ 6.","priority":"high","estimate_minutes":60,"deadline":null}
+]}`;
 
     const jsonSchema = {
       type: "object",
