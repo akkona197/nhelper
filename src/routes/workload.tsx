@@ -9,10 +9,11 @@ import {
   getWeekDays,
   getWeekStart,
   taskOccursOn,
+  WEEK_STARTS_ON,
   type InstanceRow,
   type TaskRow,
 } from "@/lib/scheduling";
-import { addWeeks, format } from "date-fns";
+import { addWeeks, differenceInCalendarWeeks, format, getWeek } from "date-fns";
 import { vi } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Clock, TrendingUp, CheckCircle2 } from "lucide-react";
@@ -33,6 +34,13 @@ function Workload() {
   const [anchor, setAnchor] = useState(new Date());
   const weekStart = useMemo(() => getWeekStart(anchor), [anchor]);
   const days = useMemo(() => getWeekDays(weekStart), [weekStart]);
+  const navLabel = useMemo(() => {
+    const dw = differenceInCalendarWeeks(anchor, new Date(), { weekStartsOn: WEEK_STARTS_ON });
+    if (dw === 0) return "Tuần này";
+    if (dw === -1) return "Tuần trước";
+    if (dw === 1) return "Tuần sau";
+    return `Tuần ${getWeek(anchor, { weekStartsOn: WEEK_STARTS_ON, firstWeekContainsDate: 1 })}`;
+  }, [anchor]);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [instances, setInstances] = useState<InstanceRow[]>([]);
 
@@ -96,7 +104,9 @@ function Workload() {
           <Button variant="outline" size="icon" onClick={() => setAnchor(addWeeks(anchor, -1))}>
             <ChevronLeft className="size-4" />
           </Button>
-          <Button variant="outline" onClick={() => setAnchor(new Date())}>Tuần này</Button>
+          <Button variant="outline" className="min-w-[92px]" onClick={() => setAnchor(new Date())} title="Về tuần này">
+            {navLabel}
+          </Button>
           <Button variant="outline" size="icon" onClick={() => setAnchor(addWeeks(anchor, 1))}>
             <ChevronRight className="size-4" />
           </Button>
