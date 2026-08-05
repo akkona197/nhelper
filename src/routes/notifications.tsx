@@ -44,7 +44,22 @@ function NotifPage() {
       .from("notifications")
       .select("*")
       .order("created_at", { ascending: false });
-    setItems((data as Notif[]) ?? []);
+    const rows = (data as Notif[]) ?? [];
+    // Gộp thông báo nhắc trùng (cùng thời điểm nhắc + tiêu đề): giữ dòng mới nhất, xoá phần dư
+    const seen = new Set<string>();
+    const dupIds: string[] = [];
+    const deduped = rows.filter((r) => {
+      if (!r.remind_at) return true; // ghi chú tự tạo: không gộp
+      const k = `${r.remind_at}|${r.title}`;
+      if (seen.has(k)) {
+        dupIds.push(r.id);
+        return false;
+      }
+      seen.add(k);
+      return true;
+    });
+    setItems(deduped);
+    if (dupIds.length) await supabase.from("notifications").delete().in("id", dupIds);
   }
   useEffect(() => { reload(); }, [user]);
 

@@ -56,6 +56,22 @@ export function useReminders() {
       const instances = (insData as InstanceRow[]) ?? [];
       const now = new Date();
 
+      // Đã nhắc rồi (đọc từ DB) để không chèn trùng khi reload / mở nhiều tab.
+      // Key = `${task_id}:${thời điểm nhắc tính theo ms}`
+      const windowStart = new Date(today.getTime() - 86400000).toISOString();
+      const { data: existingNotif } = await supabase
+        .from("notifications")
+        .select("task_id, remind_at")
+        .eq("user_id", user!.id)
+        .not("remind_at", "is", null)
+        .gte("remind_at", windowStart);
+      if (cancelled) return;
+      const alreadyNotified = new Set<string>(
+        ((existingNotif as Array<{ task_id: string | null; remind_at: string | null }>) ?? [])
+          .filter((r) => r.task_id && r.remind_at)
+          .map((r) => `${r.task_id}:${new Date(r.remind_at as string).getTime()}`),
+      );
+
       const checks: Array<{ task: TaskRow; when: Date; key: string; instance?: InstanceRow }> = [];
       tasks.forEach((task) => {
         if (task.reminder_minutes == null) return;
@@ -80,8 +96,15 @@ export function useReminders() {
         if (c.instance?.is_done) continue;
         if (fired.current.has(c.key)) continue;
         const remindAt = new Date(c.when.getTime() - (c.task.reminder_minutes ?? 0) * 60_000);
+        // Bỏ qua nếu DB đã có thông báo cho đúng lần nhắc này (chống trùng qua reload/nhiều tab)
+        const dedupKey = `${c.task.id}:${remindAt.getTime()}`;
+        if (alreadyNotified.has(dedupKey)) {
+          fired.current.add(c.key);
+          continue;
+        }
         if (now >= remindAt && now <= c.when) {
           fired.current.add(c.key);
+          alreadyNotified.add(dedupKey);
           const body = `Lúc ${c.when.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} • còn ~${Math.max(0, Math.round((c.when.getTime() - now.getTime()) / 60000))}'`;
           // Toast is fired by the realtime subscription on the notifications insert below.
           if (typeof Notification !== "undefined" && Notification.permission === "granted") {
