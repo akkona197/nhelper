@@ -105,6 +105,7 @@ function BoardPage() {
   const { user } = useAuth();
   const [notes, setNotes] = useState<BoardNote[]>([]);
   const [loading, setLoading] = useState(true);
+  const [zoomUrl, setZoomUrl] = useState<string | null>(null);
   const [boardStyle, setBoardStyle] = useState<string>(() => {
     if (typeof window === "undefined") return "blue";
     const s = localStorage.getItem(STYLE_KEY);
@@ -139,6 +140,16 @@ function BoardPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Đóng popup phóng to ảnh bằng phím Esc
+  useEffect(() => {
+    if (!zoomUrl) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setZoomUrl(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [zoomUrl]);
 
   const addNote = useCallback(
     async (extra?: Partial<BoardNote>) => {
@@ -371,7 +382,9 @@ function BoardPage() {
                       src={n.image_url}
                       alt=""
                       draggable={false}
-                      className="w-full rounded-sm mb-1 select-none shrink-0 object-cover"
+                      onDoubleClick={() => setZoomUrl(n.image_url)}
+                      title="Nhấn đúp để phóng to"
+                      className="w-full rounded-sm mb-1 select-none shrink-0 object-cover cursor-zoom-in"
                       style={{ maxHeight: "72%" }}
                     />
                   )}
@@ -429,6 +442,28 @@ function BoardPage() {
           })}
         </div>
       </div>
+
+      {/* Popup phóng to ảnh (nhấn đúp vào ảnh trong note) */}
+      {zoomUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-8"
+          onClick={() => setZoomUrl(null)}
+        >
+          <button
+            onClick={() => setZoomUrl(null)}
+            title="Đóng (Esc)"
+            className="absolute top-4 right-4 size-10 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center text-xl leading-none"
+          >
+            ✕
+          </button>
+          <img
+            src={zoomUrl}
+            alt=""
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-full object-contain rounded-md shadow-2xl select-none"
+          />
+        </div>
+      )}
     </div>
   );
 }
