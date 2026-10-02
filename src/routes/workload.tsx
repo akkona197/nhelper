@@ -115,7 +115,7 @@ function Workload() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <Stat icon={<Clock className="size-4" />} label="Tổng giờ ước tính" value={`${totalHours.toFixed(1)}h`} />
-        <Stat icon={<TrendingUp className="size-4" />} label="Trung bình / ngày" value={`${(totalHours / 7).toFixed(1)}h`} />
+        <Stat icon={<TrendingUp className="size-4" />} label="Trung bình / ngày" value={`${(totalHours / 6).toFixed(1)}h`} />
         <Stat icon={<CheckCircle2 className="size-4" />} label="Hoàn thành" value={`${completion}% (${totalDone}/${totalCount})`} />
       </div>
 
