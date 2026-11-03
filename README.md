@@ -1,146 +1,105 @@
-# nhelper (Master Task)
+# Master Task (nhelper)
 
-Ứng dụng web quản lý công việc cá nhân theo lịch tuần. Người dùng tạo task (một lần hoặc lặp lại), xếp lên lịch, theo dõi khối lượng công việc, và dán tin nhắn/email để AI bóc tách thành task.
+English | [Tiếng Việt](README.vi.md)
 
-Tên hiển thị trong ứng dụng: **Master Task**. Tên repo: **nhelper**. Giao diện bằng tiếng Việt.
+A personal task manager built around a weekly calendar, with an **AI Inbox** that turns a pasted chat message or email into structured, schedulable tasks.
 
-Bản đang chạy: https://master-task.akkona197.workers.dev
+Live app: https://master-task.akkona197.workers.dev
 
-## Tính năng
+## The problem
 
-| Màn hình | Route | Chức năng |
-|---|---|---|
-| Trang chủ | `/` | Lối vào nhanh tới các màn hình |
-| Lịch | `/lich` | Xem theo Ngày, 3 ngày, Tuần, Tháng. Kéo thả task giữa các ngày, kéo task vào dự án hoặc nhãn để gán, dời task quá hạn về hôm nay, chỉnh độ rộng cột |
-| Workload | `/workload` | Tổng giờ ước tính theo tuần, trung bình giờ mỗi ngày (chia 6 ngày làm việc, trừ Chủ nhật), tỷ lệ hoàn thành, biểu đồ giờ ước tính theo ngày |
-| AI Inbox | `/inbox` | Dán đoạn tin nhắn/email, AI trả về danh sách task đề xuất (tiêu đề, mô tả, ưu tiên, thời gian ước tính, deadline) để thêm từng task |
-| Thông báo | `/notifications` | Danh sách thông báo trong ứng dụng, bật thông báo trình duyệt, đánh dấu đã đọc, xoá |
-| Bảng ghim | `/board` | Giấy note kéo thả, đổi kích cỡ, đổi màu, đính kèm ảnh |
-| Feedback | `/feedback` | Gửi góp ý (lỗi, ý tưởng, khác) |
-| Hồ sơ | `/profile` | Thông tin cá nhân, ảnh đại diện, cá nhân hóa giao diện, hình nền |
-| Đăng nhập | `/auth` | Đăng nhập và tạo tài khoản bằng Supabase Auth |
+In a customer service operations team, work arrives as chat messages: a weekly task list from a lead, a request from another team, a reminder in a group thread. One message often mixes several deliverables with labels, owners, links and deadlines written in free form. Copying these into a task tool by hand is slow, and items get lost.
 
-Chức năng bổ trợ:
+Master Task closes that gap: paste the message, review the tasks the model extracts, add the ones you want to the calendar.
 
-- Task lặp lại theo ngày hoặc theo thứ trong tuần, có ngày bắt đầu và ngày kết thúc. Mỗi lần xuất hiện của task lặp được lưu thành một bản ghi riêng trong `task_instances`.
-- Nhắc việc: hook `useReminders` kiểm tra mỗi phút, khi chạm mốc `reminder_minutes` thì hiện toast, gửi thông báo trình duyệt (nếu được cấp quyền) và ghi vào bảng `notifications`. Thông báo mới cũng đẩy realtime qua Supabase Realtime.
-- Ghi chú theo task bằng trình soạn thảo rich text (Tiptap), có ảnh.
-- Hướng dẫn lần đầu (Welcome và Tour) do nhân vật Bé Lúa dẫn đường.
+## What it does
 
-## Công nghệ
+| Screen | Purpose |
+|---|---|
+| Calendar | Day, 3-day, week and month views. Drag tasks between days, onto projects or labels, move overdue tasks to today |
+| Workload | Estimated hours per week, average per working day (Mon to Sat), completion rate, daily hours chart |
+| AI Inbox | Paste a message, get suggested tasks (title, description, priority, estimate, deadline), add them one by one |
+| Notifications | In-app and browser reminders, realtime via Supabase Realtime |
+| Board | Sticky notes with drag, resize, colors and images |
+| Feedback | Users submit bugs and ideas; a database trigger turns each into a task for the owner |
 
-- Framework: TanStack Start, TanStack Router, TanStack Query, React 19, TypeScript
-- Build: Vite 7, Nitro
-- UI: Tailwind CSS 4, shadcn/ui (Radix UI), lucide-react, framer-motion, Recharts, Sonner
-- Editor: Tiptap
-- Backend: Supabase (Postgres, Auth, Storage, Realtime, Edge Functions)
-- AI: Cloudflare Workers AI, gọi từ Edge Function
-- Hosting: Cloudflare Workers (`wrangler.jsonc`)
-- Công cụ: ESLint, Prettier, Bun (`bunfig.toml`)
+Recurring tasks (daily or by weekday) are materialized as one row per occurrence in `task_instances`, so each occurrence can be completed, moved or annotated independently.
 
-## Cấu trúc thư mục
+## Architecture
 
 ```
-src/
-  routes/              Các màn hình (file-based routing của TanStack Router)
-  components/          Component ứng dụng (AppShell, TaskDialog, NotesPanel, Tour, ...)
-  components/ui/       Component shadcn/ui
-  context/             AuthContext, PreferencesContext
-  hooks/               useReminders, use-mobile
-  integrations/supabase/  Client, middleware xác thực, types sinh tự động
-  lib/scheduling.ts    Kiểu dữ liệu task và logic xác định task lặp xuất hiện vào ngày nào
-supabase/
-  config.toml
-  functions/parse-tasks/  Edge Function bóc tách task bằng AI
-  migrations/             Schema, RLS policy, trigger
-.github/workflows/
-  backup.yml           Sao lưu dữ liệu Supabase hằng ngày
+Browser (React 19, TanStack Start)  --->  Cloudflare Workers (hosting, SSR)
+        |
+        +--> Supabase: Postgres + Row Level Security, Auth, Storage, Realtime
+        |
+        +--> Supabase Edge Function `parse-tasks`  --->  Cloudflare Workers AI
+                                                          primary:  Llama 3.3 70B (fp8-fast)
+                                                          fallback: Llama 3.1 8B
 ```
 
-## Mô hình dữ liệu
+Every user table has Row Level Security enabled; each user reads and writes only rows with their own `user_id`.
 
-Bảng trong schema `public`: `profiles`, `projects`, `labels`, `tasks`, `task_instances`, `task_labels`, `task_notes`, `board_notes`, `notifications`, `feedback`.
+## Design decisions
 
-Storage bucket: `avatars`, `note-images` (cả hai private, phân quyền theo thư mục `user_id`).
+**LLM provider and model choice.** The AI Inbox went through several providers in a short period, each change driven by a concrete constraint:
 
-Kiểu enum: `task_priority` (`low`, `medium`, `high`), `recurrence_type` (`none`, `daily`, `weekly`).
+1. Started on the AI service bundled with the original no-code builder.
+2. Moved the `parse-tasks` function to Google Gemini to own the integration directly.
+3. Added rotation across several Gemini models when individual models hit free-tier limits.
+4. Switched to Cloudflare Workers AI after the Gemini free tier became unavailable in the deployment region.
+5. Tried Llama 3.1 8B as primary for latency, with 70B as fallback.
+6. Settled on Llama 3.3 70B fp8-fast as primary and 8B as fallback, together with a stricter prompt, because task grouping quality mattered more than the latency gain.
 
-Row Level Security bật cho các bảng dữ liệu người dùng. Mỗi người dùng chỉ đọc và ghi được dữ liệu có `user_id` của chính mình. Riêng `feedback`: người dùng thêm và xem được góp ý của mình, tài khoản chủ ứng dụng xem được toàn bộ. Trigger `on_feedback_insert` tự tạo task, task instance và thông báo cho chủ ứng dụng mỗi khi có góp ý mới (lỗi: ưu tiên cao, ý tưởng: trung bình, còn lại: thấp).
+**Structured output instead of free-text parsing.** The request uses a JSON schema (`response_format: json_schema`) and `temperature: 0.2`. The function still tolerates either a string or an object in the response and falls through to the next model on any parse failure, so a single bad generation does not surface as a user error.
 
-Trigger `on_auth_user_created` tạo bản ghi `profiles` khi có người dùng mới.
+**Grouping rules in the prompt.** The main failure mode was splitting one deliverable into several tasks because it spanned several lines, or turning label lines ("Channel:", "PIC:", week headers) into tasks. The prompt states explicit grouping rules and includes a worked example.
 
-## Chạy trên máy
+**Duplicate reminder protection.** Reminders are checked every minute in the browser. With several tabs open or after a reload, the same reminder could be inserted twice. The client checks the database before inserting and de-duplicates on load.
 
-Yêu cầu: Bun (hoặc Node.js 22 trở lên với npm) và một project Supabase.
+**Data ownership and backups.** The app moved from the builder's hosting and database to its own Cloudflare Workers deployment and its own Supabase project. A scheduled GitHub Action exports all user tables daily; because this repository is public, the export is encrypted with AES-256 before it is stored as a workflow artifact.
+
+## Known limitations
+
+- No evaluation set yet for the AI Inbox. Model choice was made by manual testing, not measured accuracy, latency or cost.
+- The `parse-tasks` function is deployed with `verify_jwt = false`.
+- The feedback migration hardcodes the owner's email; change it before reusing the schema.
+- Backups cover database tables only, not Storage files.
+
+## Tech stack
+
+TanStack Start, TanStack Router, TanStack Query, React 19, TypeScript, Vite 7, Tailwind CSS 4, shadcn/ui, Tiptap, Recharts, Supabase (Postgres, Auth, Storage, Realtime, Edge Functions), Cloudflare Workers, Cloudflare Workers AI.
+
+## Run locally
+
+Requires Bun (or Node.js 22+ with npm) and a Supabase project.
 
 ```bash
+cp .env.example .env   # fill in your Supabase URL and publishable key
 bun install
 bun run dev
 ```
 
-Các lệnh khác:
-
-```bash
-bun run build      # build production
-bun run build:dev  # build với mode development
-bun run preview    # chạy thử bản build
-bun run lint
-bun run format
-```
-
-### Biến môi trường
-
-File `.env` ở thư mục gốc cần các biến sau:
-
-| Biến | Dùng cho |
-|---|---|
-| `VITE_SUPABASE_URL` | URL project Supabase (phía trình duyệt) |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Publishable key (phía trình duyệt) |
-| `VITE_SUPABASE_PROJECT_ID` | ID project Supabase (phía trình duyệt) |
-| `SUPABASE_URL` | URL project Supabase (phía server) |
-| `SUPABASE_PUBLISHABLE_KEY` | Publishable key (phía server) |
-| `SUPABASE_PROJECT_ID` | ID project Supabase (phía server) |
-
-Chỉ đặt publishable key trong `.env`. Không đưa service role key vào repo.
-
-### Thiết lập database
-
-Áp dụng toàn bộ file trong `supabase/migrations/` theo thứ tự tên file lên project Supabase của bạn, ví dụ bằng Supabase CLI:
+Apply the schema with the Supabase CLI:
 
 ```bash
 supabase link --project-ref <project-id>
 supabase db push
 ```
 
-Lưu ý: migration `20260728050000_feedback.sql` gắn cứng email chủ ứng dụng trong policy và trigger. Đổi email này trước khi dùng cho project khác.
-
-## Edge Function `parse-tasks`
-
-Nhận `{ message, now }`, gọi Cloudflare Workers AI để bóc tách task, trả về `{ tasks, model }`.
-
-- Model chính: `@cf/meta/llama-3.3-70b-instruct-fp8-fast`. Model dự phòng khi lỗi: `@cf/meta/llama-3.1-8b-instruct`.
-- Đầu ra ép theo JSON schema. Mỗi task gồm `title`, `description`, `priority`, `estimate_minutes`, `deadline`.
-- Quy tắc gom tách: mỗi đầu việc là một task, các dòng nhãn hoặc thông tin (kênh, PIC, link, tiêu đề tuần) gộp vào mô tả, không tạo task riêng.
-
-Secret cần đặt cho function:
+Deploy the AI function:
 
 ```bash
-supabase secrets set CF_ACCOUNT_ID=<cloudflare-account-id> CF_API_TOKEN=<token-co-quyen-workers-ai>
+supabase secrets set CF_ACCOUNT_ID=<cloudflare-account-id> CF_API_TOKEN=<token-with-workers-ai-access>
 supabase functions deploy parse-tasks
 ```
 
-Cấu hình hiện tại trong `supabase/config.toml` là `verify_jwt = false`, nghĩa là function không yêu cầu JWT và CORS cho phép mọi origin.
+Backups need three repository secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `BACKUP_PASSPHRASE`. Decrypt a backup with `gpg -d backup-YYYY-MM-DD.json.gpg > backup.json`.
 
-## Triển khai
+## How this was built
 
-Cấu hình Cloudflare Workers nằm trong `wrangler.jsonc` (entry `@tanstack/react-start/server-entry`, cờ `nodejs_compat`).
+I own the problem definition, requirements and the design decisions above. The code was written with AI coding assistants (first a no-code builder, then Claude).
 
-Khi ứng dụng chạy trên hostname kết thúc bằng `lovable.app`, ứng dụng hiển thị `MovedNotice` và chuyển người dùng sang địa chỉ Cloudflare Workers ở trên.
+## Author
 
-## Sao lưu dữ liệu
-
-Workflow `.github/workflows/backup.yml` chạy lúc 00:00 giờ Việt Nam hằng ngày, và chạy tay được từ tab Actions. Workflow xuất các bảng `profiles`, `projects`, `labels`, `tasks`, `task_instances`, `task_labels`, `task_notes`, `board_notes`, `notifications`, `feedback` ra một file JSON, kiểm tra JSON hợp lệ bằng `jq`, rồi upload thành artifact lưu 90 ngày.
-
-Cần đặt secret `SUPABASE_SERVICE_ROLE_KEY` trong Settings, Secrets and variables, Actions của repo.
-
-Workflow không sao lưu file trong Storage (`avatars`, `note-images`).
+Phan Nguyen Yen Nhi, QA Team Lead in customer service operations, building tools for CX teams.
+[LinkedIn](https://www.linkedin.com/in/nhi-phan-29b369195/)
