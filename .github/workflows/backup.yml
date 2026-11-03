@@ -12,14 +12,19 @@ jobs:
     steps:
       - name: Export all tables to JSON
         env:
-          SUPABASE_URL: "https://umqxjpwkjzsnvbtjlmur.supabase.co"
+          # Set in Settings > Secrets and variables > Actions. Do not hardcode the project URL:
+          # the app moved Supabase projects once and the hardcoded URL went stale.
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
         run: |
           set -euo pipefail
-          if [ -z "${SERVICE_KEY}" ]; then
-            echo "::error::Chưa cấu hình secret SUPABASE_SERVICE_ROLE_KEY. Vào Settings → Secrets and variables → Actions để thêm."
-            exit 1
-          fi
+          for v in SUPABASE_URL SERVICE_KEY BACKUP_PASSPHRASE; do
+            if [ -z "${!v}" ]; then
+              echo "::error::Missing secret for ${v}. Add SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and BACKUP_PASSPHRASE in Settings > Secrets and variables > Actions."
+              exit 1
+            fi
+          done
           TABLES="profiles projects labels tasks task_instances task_labels task_notes board_notes notifications feedback"
           mkdir -p backups
           DATE="$(date -u +%Y-%m-%d)"
@@ -44,11 +49,16 @@ jobs:
           # Chuẩn hoá + kiểm tra JSON hợp lệ
           jq . "$OUT" > "${OUT}.tmp" && mv "${OUT}.tmp" "$OUT"
           echo "SIZE=$(wc -c < "$OUT") bytes"
+          # This repo is public: workflow artifacts are downloadable by other GitHub users.
+          # Encrypt the dump so only the passphrase holder can read user data.
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" \
+            --symmetric --cipher-algo AES256 -o "${OUT}.gpg" "$OUT"
+          rm -f "$OUT"
           echo "ARTIFACT_DATE=${DATE}" >> "$GITHUB_ENV"
 
       - name: Upload backup artifact
         uses: actions/upload-artifact@v4
         with:
           name: master-task-backup-${{ env.ARTIFACT_DATE }}
-          path: backups/*.json
+          path: backups/*.json.gpg
           retention-days: 90

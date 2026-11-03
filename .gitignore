@@ -30,3 +30,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files (never commit real values; see .env.example)
+.env
+.env.*
+!.env.example
