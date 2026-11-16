@@ -16,7 +16,9 @@ import {
 import { addWeeks, differenceInCalendarWeeks, format, getWeek } from "date-fns";
 import { vi } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Clock, TrendingUp, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, TrendingUp, CheckCircle2, Download } from "lucide-react";
+import { toast } from "sonner";
+import { downloadWorkloadCsv } from "@/lib/workload-export";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Cell } from "recharts";
 
 export const Route = createFileRoute("/workload")({
@@ -31,6 +33,7 @@ export const Route = createFileRoute("/workload")({
 
 function Workload() {
   const { user } = useAuth();
+  const [exporting, setExporting] = useState(false);
   const [anchor, setAnchor] = useState(new Date());
   const weekStart = useMemo(() => getWeekStart(anchor), [anchor]);
   const days = useMemo(() => getWeekDays(weekStart), [weekStart]);
@@ -91,6 +94,20 @@ function Workload() {
   const totalDone = data.reduce((s, x) => s + x.done, 0);
   const completion = totalCount === 0 ? 0 : Math.round((totalDone / totalCount) * 100);
 
+  async function exportHistory() {
+    if (!user || exporting) return;
+    setExporting(true);
+    try {
+      if (!(await downloadWorkloadCsv(user.id))) {
+        toast.info("Chưa có lịch sử công việc hoặc ghi chú để tải.");
+      }
+    } catch {
+      toast.error("Không thể tải lịch sử công việc. Bạn thử lại nhé.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="p-6">
       <header className="flex items-center justify-between mb-6 flex-wrap gap-4">
@@ -100,7 +117,11 @@ function Workload() {
             {format(days[0], "dd MMM", { locale: vi })} – {format(days[6], "dd MMM yyyy", { locale: vi })}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={exportHistory} disabled={!user || exporting}>
+            <Download className="size-4" />
+            {exporting ? "Đang xuất CSV…" : "Tải lịch sử CSV"}
+          </Button>
           <Button variant="outline" size="icon" onClick={() => setAnchor(addWeeks(anchor, -1))}>
             <ChevronLeft className="size-4" />
           </Button>
